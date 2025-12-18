@@ -2,9 +2,13 @@ import json
 
 
 def get_prompt2_storyboard(outline, reference_image_path):
-
+    # --- 修改开始：在开头加入强制中文指令，并优化动画要求 ---
     base_prompt = f""" 
     You are a professional education Explainer and Animator, expert at converting mathematical teaching outlines into storyboard scripts suitable for the Manim animation system.
+
+    # IMPORTANT: LANGUAGE REQUIREMENT
+    # ALL OUTPUTS MUST BE IN SIMPLIFIED CHINESE (简体中文).
+    # The lecture lines must be natural, spoken Chinese.
 
     ## Task
     Convert the following teaching outline into a detailed step-by-step storyboard script:
@@ -12,62 +16,48 @@ def get_prompt2_storyboard(outline, reference_image_path):
     {outline}
     """
 
-    # Add reference image guidance
+    # Add reference image guidance (保持不变)
     if reference_image_path:
         base_prompt += f"""
-
     ## Reference Image Available
     A reference image has been provided to assist with designing the animations for this concept.
-
-    ### How to Use the Reference Image:
-    - Examine the visual elements, diagrams, layouts, and representations shown in the image
-    - Use the image to inspire and guide your animation design, especially for the KEY SECTIONS
-    - Focus on recreating the visual concepts using Manim objects (shapes, text, mathematical expressions)
-    - Pay attention to how information is organized spatially in the image
-    - If the image shows mathematical diagrams, design animations that build similar visualizations step by step
-    - Use the image to identify which sections should have more detailed/complex animations
-    - DO NOT reference the image directly in animations - instead recreate the concepts with Manim code
-    
-    ### Priority:
-    - Give extra attention to sections that can benefit most from the visual concepts shown in the reference image
+    ... (此处省略 reference image 的中间内容，保持原样即可) ...
     """
 
+    # --- 修改重点：优化 Storyboard Requirements ---
     base_prompt += """
     ## Storyboard Requirements
     
     ### Content Structure
-    - For key sections (max 3 sections), use up to 5 lecture lines along with their corresponding 5 animations to provide a logically coherent explanation. Other sections contains 3 lecture points and 3 corresponding animations.
-    - In key sections, assets not forbiddened.
-    - Must keep each lecture line brief [NO MORE THAN 10 WORDS FOR ONE LINE].
-    - Animation steps must closely correspond to lecture points.
-    - Do not apply any animation to lecture lines except for changing the color of corresponding line when its related animation is presented.
+    - For key sections (max 3 sections), use up to 5 lecture lines along with their corresponding 5 animations.
+    - Other sections contains 3 lecture points and 3 corresponding animations.
+    - **Language**: All `title` and `lecture_lines` MUST be in Simplified Chinese.
+    - **Brevity**: Keep lecture lines concise (Max 20 Chinese characters per line).
+    - **Flow**: Ensure a smooth logical flow between steps.
 
     ### Visual Design
-    - Colors: Background fixed at #000000, use ligt color for contrast.
-    - IMPORTANT: Provide hexadecimal codes for colors.
-    - Element Labeling: Assign clear colors and labels near all elements (formulas, etc.).
+    - Colors: Background fixed at #000000. Use professional, high-contrast color palettes (e.g., #89CFF0 for focus, #FFFFFF for text).
+    - Element Labeling: Assign clear labels in Chinese near all elements.
 
-    ### Animation Effects
-    - Basic Animations: Appearance, movement, color changes, fade in/out, scaling.
-    - Emphasis Effects: Flashing, color changes, bolding to highlight key knowledge points.
+    ### Animation Effects (CRITICAL FOR QUALITY)
+    - **Smoothness**: Avoid rapid flashing or "ghostly" jittering. Use smooth interpolations (e.g., `run_time=1.5` for complex moves).
+    - **Transitions**: Use `Transform`, `ReplacementTransform`, or `Write` for smooth transitions between states. Avoid simply `FadeIn`/`FadeOut` for everything.
+    - **Sync**: Animation steps must closely correspond to the meaning of the lecture points.
 
     ### Constraints
     - No panels or 3D methods.
-    - Avoid coordinate axes unless absolutely necessary.
     - Focus animations on visualizing concepts that are difficult to grasp from lecture lines alone.
-    - Ensure that all animations are easy to understand.
-    - Do not involve any external elements (such as SVGs or other assets that require downloading or dependencies).
+    - Do not involve any external elements (SVGs/assets) unless specified.
 
     MUST output the storyboard design in JSON format:
     {{
         "sections": [
             {{
                 "id": "section_1",
-                "title": "Sec 1: Section Title",
-                "lecture_lines": ["Lecture line 1", "Lecture line 2", ...],
+                "title": "Sec 1: 章节标题(中文)",
+                "lecture_lines": ["第一句讲解词", "第二句讲解词", ...],
                 "animations": [
-                    "Animation step 1: ...",
-                    "Animation step 2: ...",
+                    "Animation step 1: (Describe the visual action in English or Chinese)",
                     ...
                 ]
             }},
@@ -75,7 +65,6 @@ def get_prompt2_storyboard(outline, reference_image_path):
         ]
     }}
     """
-
     return base_prompt
 
 

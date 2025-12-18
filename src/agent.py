@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import re
 import argparse
 import json
@@ -87,7 +90,7 @@ class TeachingVideoAgent:
         self.assets_dir.mkdir(exist_ok=True)
 
         """3. ScopeRefine & Anchor Visual"""
-        self.scope_refine_fixer = ScopeRefineFixer(api, self.max_code_token_length)
+        self.scope_refine_fixer = ScopeRefineFixer(self.API, self.max_code_token_length)
         self.extractor = GridPositionExtractor()
 
         """4. External Database"""
@@ -364,7 +367,7 @@ class TeachingVideoAgent:
             try:
                 scene_name = f"{section_id.title().replace('_', '')}Scene"
                 code_file = f"{section_id}.py"
-                cmd = ["manim", "-ql", str(code_file), scene_name]
+                cmd = ["manim", "-qh", str(code_file), scene_name]
 
                 result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=180)
 

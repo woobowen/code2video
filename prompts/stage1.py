@@ -1,7 +1,8 @@
 def get_prompt1_outline(knowledge_point, duration=5, reference_image_path=None):
     base_prompt = f""" 
     As an outstanding instructional design expert, design a logically clear, step-by-step, example-driven teaching outline.
-
+    IMPORTANT: The Output Language MUST be CHINESE (Simplified Chinese).
+    All titles, content descriptions, and examples must be in Chinese.
     Knowledge Point: {knowledge_point}
     """
 

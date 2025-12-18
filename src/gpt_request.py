@@ -906,34 +906,25 @@ def request_gpt41(prompt, log_id=None, max_tokens=1000, max_retries=3):
             time.sleep(delay)
 
 
+# 替换 src/gpt_request.py 中的 request_gpt41_token 函数
 def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
-    """
-    Makes a request to the gpt-4.1-2025-04-14 model with retry functionality.
-
-    Args:
-        prompt (str): The text prompt to send to the model
-        log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
-        max_tokens (int, optional): Maximum tokens for response, default 1000
-        max_retries (int, optional): Maximum number of retry attempts, default 3
-
-    Returns:
-        dict: The model's response
-    """
+    # 读取配置
     base_url = cfg("gpt41", "base_url")
-    api_version = cfg("gpt41", "api_version")
     ak = cfg("gpt41", "api_key")
     model_name = cfg("gpt41", "model")
 
-    client = openai.AzureOpenAI(
-        azure_endpoint=base_url,
-        api_version=api_version,
+    # --- 修改点：使用标准 OpenAI Client ---
+    client = OpenAI(
+        base_url=base_url,
         api_key=ak,
     )
+    # ------------------------------------
 
     if log_id is None:
         log_id = generate_log_id()
 
-    extra_headers = {"X-TT-LOGID": log_id}
+    # 某些中转站不支持自定义 header，如果报错可以把 extra_headers 删掉
+    extra_headers = {"X-TT-LOGID": log_id} 
     usage_info = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     retry_count = 0
@@ -955,14 +946,12 @@ def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
         except Exception as e:
             retry_count += 1
             if retry_count >= max_retries:
-                # 即使失败也返回，以便主程序可以继续
+                # 即使失败也返回，以免程序崩溃
                 print(f"Failed after {max_retries} attempts. Last error: {str(e)}")
                 return None, usage_info
-
+            
             delay = (2**retry_count) * 0.1 + (random.random() * 0.1)
-            print(
-                f"Request failed with error: {str(e)}. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})"
-            )
+            print(f"Retry {retry_count} error: {str(e)}. Waiting {delay:.2f}s...")
             time.sleep(delay)
 
     return None, usage_info
