@@ -524,12 +524,15 @@ class ScopeRefineFixer:
                 response = self.request_gpt(fix_prompt, max_tokens=self.MAX_CODE_TOKEN_LENGTH)
                 response = get_completion_only(response)
 
-                if hasattr(response, "choices") and response.choices:
+                if hasattr(response, "choices") and response.choices and len(response.choices) > 0:
                     fixed_code = response.choices[0].message.content
+                elif hasattr(response, "candidates") and response.candidates: # 兼容 Gemini
+                    fixed_code = response.candidates[0].content.parts[0].text
                 elif isinstance(response, str):
                     fixed_code = response
                 else:
-                    fixed_code = str(response)
+                    logger.warning(f"Attempt {attempt}: API response format unexpected: {response}")
+                    continue # 跳过本次循环，而不是崩溃
 
                 fixed_code = self._clean_code_format(fixed_code)
 

@@ -1,6 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 import re
 import argparse
 import json
@@ -126,7 +128,7 @@ class TeachingVideoAgent:
 
     def _request_video_api_and_track_tokens(self, prompt, video_path):
         """Wraps video API requests and accumulates token usage automatically"""
-        response, usage = request_gemini_video_img(prompt=prompt, video_path=video_path, image_path=self.GRID_IMG_PATH)
+        response, usage = request_gemini_video_img_token(prompt=prompt, video_path=video_path, image_path=self.GRID_IMG_PATH)
 
         if usage:
             self.token_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
@@ -367,9 +369,9 @@ class TeachingVideoAgent:
             try:
                 scene_name = f"{section_id.title().replace('_', '')}Scene"
                 code_file = f"{section_id}.py"
-                cmd = ["manim", "-qh", str(code_file), scene_name]
+                cmd = ["manim", "-ql", str(code_file), scene_name]
 
-                result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=180)
+                result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=300)
 
                 if result.returncode == 0:
                     # 注意：-qh 生成的是 1080p60，路径通常是 1080p60 而非 480p15
