@@ -54,7 +54,7 @@ class VideoEvaluator:
             return result
 
         except Exception as e:
-            print(f"Error during video evaluation: {str(e)}")
+            print(f"视频评估期间出错: {str(e)}")
             return self._create_error_result(str(e))
 
     def evaluate_video_batch(
@@ -85,22 +85,23 @@ class VideoEvaluator:
             knowledge_point = video_info.get("knowledge_point", "")
 
             if not knowledge_point:
-                print(f"Warning: Video {i+1} is missing knowledge_point information, which may affect evaluation accuracy")
+                print(f"警告: 视频 {i+1} 缺少知识点信息，可能会影响评估准确性")
 
-            print(f"Evaluating video {i+1}/{len(video_list)}: {video_path}")
-            print(f"Knowledge Point: {knowledge_point}")
+            print(f"正在评估视频 {i+1}/{len(video_list)}: {video_path}")
+            print(f"知识点: {knowledge_point}")
 
             result = self.evaluate_video(
                 video_path=video_path, knowledge_point=knowledge_point, log_id=f"{log_id}_video_{i+1}" if log_id else None
             )
 
             results.append(result)
+        return results
 
     def _evaluate_video_batch_parallel(
         self, video_list: List[Dict[str, Any]], log_id: str = None, max_workers: int = 3
     ) -> List[EvaluationResult]:
         """Parallel processing mode"""
-        print(f"Starting parallel evaluation of {len(video_list)} videos using {max_workers} worker threads...")
+        print(f"开始并行评估 {len(video_list)} 个视频，使用 {max_workers} 个工作线程...")
 
         results = [None] * len(video_list)
         completed_count = 0
@@ -113,7 +114,7 @@ class VideoEvaluator:
 
             if not knowledge_point:
                 with self._progress_lock:
-                    print(f"Warning: Video {index+1} is missing knowledge_point information, which may affect evaluation accuracy")
+                    print(f"警告: 视频 {index+1} 缺少知识点信息，可能会影响评估准确性")
 
             try:
                 result = self.evaluate_video(
@@ -121,7 +122,7 @@ class VideoEvaluator:
                 )
                 return index, result, None
             except Exception as e:
-                error_result = self._create_error_result(f"Parallel evaluation error: {str(e)}")
+                error_result = self._create_error_result(f"并行评估错误: {str(e)}")
                 return index, error_result, str(e)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -139,24 +140,24 @@ class VideoEvaluator:
                         avg_time_per_video = elapsed_time / completed_count
                         eta = avg_time_per_video * (len(video_list) - completed_count)
 
-                        print(f"Completed {completed_count}/{len(video_list)} " f"(Time: {elapsed_time:.1f}s, ETA: {eta:.1f}s)")
+                        print(f"已完成 {completed_count}/{len(video_list)} " f"(耗时: {elapsed_time:.1f}s, ETA: {eta:.1f}s)")
 
                         if error:
-                            print(f"Warning: Video {index+1} evaluation encountered an error: {error}")
+                            print(f"警告: 视频 {index+1} 评估出错: {error}")
                         else:
                             video_path = video_list[index].get("path", "")
                             knowledge_point = video_list[index].get("knowledge_point", "")
                             print(
-                                f"✓ Video {index+1}: {video_path} (Knowledge Point: {knowledge_point}) "
-                                f"- Score: {result.overall_score:.1f}/100"
+                                f"✓ 视频 {index+1}: {video_path} (知识点: {knowledge_point}) "
+                                f"- 得分: {result.overall_score:.1f}/100"
                             )
 
                 except Exception as e:
                     with self._progress_lock:
-                        print(f"Warning: Error processing future result for Video {index+1}: {str(e)}")
+                        print(f"警告: 处理视频 {index+1} 的结果时出错: {str(e)}")
 
         total_time = time.time() - start_time
-        print(f"\nParallel evaluation completed! Total Time: {total_time:.1f}s, Average per Video: {total_time/len(video_list):.1f}s")
+        print(f"\n并行评估完成！总耗时: {total_time:.1f}s, 平均每视频: {total_time/len(video_list):.1f}s")
 
         return results
 
@@ -238,18 +239,18 @@ class VideoEvaluator:
     def _build_detailed_feedback(self, data: Dict) -> str:
         feedback_sections = []
         dimensions = [
-            ("Element Layout", "element_layout"),
-            ("Attractiveness", "attractiveness"),
-            ("Logic Flow", "logic_flow"),
-            ("Accuracy & Depth", "accuracy_depth"),
-            ("Visual Consistency", "visual_consistency"),
+            ("元素布局 (Element Layout)", "element_layout"),
+            ("吸引力 (Attractiveness)", "attractiveness"),
+            ("逻辑流 (Logic Flow)", "logic_flow"),
+            ("准确度与深度 (Accuracy & Depth)", "accuracy_depth"),
+            ("视觉一致性 (Visual Consistency)", "visual_consistency"),
         ]
 
         for name, key in dimensions:
             section_data = data.get(key, {})
             score = section_data.get("score", 0)
-            feedback = section_data.get("feedback", "No feedback provided")
-            feedback_sections.append(f"**{name} ({score} points):**\n{feedback}")
+            feedback = section_data.get("feedback", "未提供反馈")
+            feedback_sections.append(f"**{name} ({score} 分):**\n{feedback}")
         summary = data.get("summary", "")
         strengths = data.get("strengths", [])
         improvements = data.get("improvements", [])
@@ -257,13 +258,13 @@ class VideoEvaluator:
         detailed_feedback = "\n\n".join(feedback_sections)
 
         if summary:
-            detailed_feedback += f"\n\n**Overall Summary:**\n{summary}"
+            detailed_feedback += f"\n\n**总体总结 (Overall Summary):**\n{summary}"
 
         if strengths:
-            detailed_feedback += f"\n\n**Key Strengths:**\n" + "\n".join([f"• {s}" for s in strengths])
+            detailed_feedback += f"\n\n**主要优点 (Key Strengths):**\n" + "\n".join([f"• {s}" for s in strengths])
 
         if improvements:
-            detailed_feedback += f"\n\n**Areas for Improvement:**\n" + "\n".join([f"• {i}" for i in improvements])
+            detailed_feedback += f"\n\n**改进建议 (Areas for Improvement):**\n" + "\n".join([f"• {i}" for i in improvements])
 
         return detailed_feedback
 
@@ -275,12 +276,12 @@ class VideoEvaluator:
             accuracy_depth=0.0,
             visual_consistency=0.0,
             overall_score=0.0,
-            detailed_feedback=f"Error during evaluation: {error_message}",
+            detailed_feedback=f"评估期间出错: {error_message}",
         )
 
     def generate_evaluation_report(self, results: List[EvaluationResult], output_path: str = None) -> str:
         if not results:
-            return "No available report due to errors in evaluation."
+            return "由于评估过程出错，无法生成报告。"
 
         total_videos = len(results)
         avg_scores = {
@@ -291,39 +292,44 @@ class VideoEvaluator:
             "visual_consistency": sum(r.visual_consistency for r in results) / total_videos,
             "overall": sum(r.overall_score for r in results) / total_videos,
         }
-        report = f"""# Evaluation Report
+        report = f"""# 视频教学质量评估报告
 
-## Video Evaluation Results
+## 视频评估详情
 
 """
 
         for i, result in enumerate(results, 1):
-            report += f"""### Video {i}
-- **Learning topic**: {result.knowledge_point}
-- **Overall Score**: {result.overall_score}/100
-- Element Layout: {result.element_layout/20*100}
-- Attractiveness: {result.attractiveness/20*100}
-- Logic Flow: {result.logic_flow/20*100}
-- Accuracy & Depth: {result.accuracy_depth/20*100}
-- Visual Consistency: {result.visual_consistency/20*100}
+            report += f"""### 视频 {i}
+- **教学主题**: {result.knowledge_point}
+- **综合得分**: {result.overall_score}/100
+- 元素布局: {result.element_layout/20*100:.1f}
+- 吸引力: {result.attractiveness/20*100:.1f}
+- 逻辑流: {result.logic_flow/20*100:.1f}
+- 准确度与深度: {result.accuracy_depth/20*100:.1f}
+- 视觉一致性: {result.visual_consistency/20*100:.1f}
+
+**详细反馈**:
+{result.detailed_feedback}
 ---
 
-## Overall Statistics
-- **Total Number of Videos Evaluated**: {total_videos}
-- **Average Overall Score**: {avg_scores['overall']:.2f}/100
+"""
+        report += f"""## 总体统计
+- **已评估视频总数**: {total_videos}
+- **平均综合得分**: {avg_scores['overall']:.2f}/100
 
-## Average Scores per Dimension
-- Element Layout: {avg_scores['element_layout']/20*100:.2f}
-- Attractiveness: {avg_scores['attractiveness']/20*100:.2f}
-- Logic Flow: {avg_scores['logic_flow']/20*100:.2f}
-- Accuracy & Depth: {avg_scores['accuracy_depth']/20*100:.2f}
-- Visual Consistency: {avg_scores['visual_consistency']/20*100:.2f}
+## 各维度平均表现 (百分制)
+- 元素布局: {avg_scores['element_layout']/20*100:.2f}
+- 吸引力: {avg_scores['attractiveness']/20*100:.2f}
+- 逻辑流: {avg_scores['logic_flow']/20*100:.2f}
+- 准确度与深度: {avg_scores['accuracy_depth']/20*100:.2f}
+- 视觉一致性: {avg_scores['visual_consistency']/20*100:.2f}
 
 """
+
         if output_path:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(report)
-            print(f"Evaluation report has been saved to: {output_path}")
+            print(f"评估报告已保存至: {output_path}")
 
         return report
 

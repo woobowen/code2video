@@ -1,50 +1,44 @@
 def get_prompt1_outline(knowledge_point, duration=5, reference_image_path=None):
     base_prompt = f""" 
-    As an outstanding instructional design expert, design a logically clear, step-by-step, example-driven teaching outline.
-    IMPORTANT: The Output Language MUST be CHINESE (Simplified Chinese).
-    All titles, content descriptions, and examples must be in Chinese.
-    Knowledge Point: {knowledge_point}
+    作为一位顶尖的教学设计专家，你需要设计一个**逻辑严密、循序渐进、以例子为驱动**的教学大纲。
+    
+    # 核心要求 (IMPORTANT)
+    1. **输出语言**：必须使用**简体中文**。
+    2. **叙事连贯性**：不要只是罗列知识点。每一节（Section）之间必须有逻辑承接（例如：“了解了X之后，我们自然会遇到Y问题...”）。
+    3. **深度解释**：确保核心概念有足够的篇幅进行深层原理解析，而不仅仅是展示定义。
+
+    知识点: {knowledge_point}
     """
 
-    # Add reference image guidance
     if reference_image_path:
         base_prompt += f"""
-
-    ## Reference Image Available
-    A reference image has been provided that relates to this knowledge point.
-
-    ### How to Use the Reference Image for Outline Design:
-    - Examine the key concepts, diagrams, and visual elements shown in the image
-    - Identify which aspects of the knowledge point are emphasized or highlighted in the image
-    - Design key section that can effectively utilize the visual concepts from the image
-    - Prioritize sections that can benefit from the visual elements demonstrated in the image
+    ## 参考图片可用
+    提供了一张参考图片。请分析图片中的视觉元素，并将其融入到大纲的核心讲解环节中。
     """
 
     base_prompt += f"""
-
-    MUST output the teaching outline in JSON format as follows:
+    请严格按照以下 JSON 格式输出：
     {{
-        "topic": "Topic Name",
-        "target_audience": "Target Audience (e.g., high school students, university students, etc.)",
+        "topic": "视频标题",
+        "target_audience": "目标受众（如：高中生、大学生、零基础初学者）",
         "sections": [
             {{
                 "id": "section_1",
-                "title": "Section Title",
-                "content": "Description of the section content",
-                "example": "XXX"
+                "title": "小节标题 (例如：为什么我们需要X？)",
+                "content": "本节详细讲解内容（侧重原理与直觉）",
+                "transition": "本节结束时的承上启下语（用于连接下一节）",
+                "example": "具体的视觉例子"
             }},
             ...
         ]
     }}
 
-    Requirements:
-    1. The total duration should be fixed at around {duration} minutes.
-    2. The sections should be arranged in a progressive and logical order.
-    3. Emphasize key concepts and critical knowledge points.
-    4. When presenting mathematical concepts, prefer representations that integrate graphical elements to enhance comprehension.
-    5. The outline should be suitable for animation and visual presentation.
-    6. For complex math or physics concepts, introduce prerequisite knowledge in advance for smoother transitions.
-    7. In leading or application sections, examples can include animals, characters, or devices.
+    具体要求：
+    1. 总时长控制在约 {duration} 分钟。
+    2. **逻辑流**：从直观的现实问题引入，到抽象概念的提出，再到具体的应用。
+    3. **数学可视化**：在涉及数学公式时，必须设计配合的几何直观解释。
+    4. **避免跳跃**：对于复杂概念，必须先铺垫前置知识。
+    5. **角色/隐喻**：鼓励使用具体的角色（如“小球”、“观察者”）或隐喻来贯穿整个视频，增强连贯性。
     """
 
     return base_prompt

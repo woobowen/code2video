@@ -2,63 +2,57 @@ import json
 
 
 def get_prompt2_storyboard(outline, reference_image_path):
-    # --- 修改开始：在开头加入强制中文指令，并优化动画要求 ---
     base_prompt = f""" 
-    You are a professional education Explainer and Animator, expert at converting mathematical teaching outlines into storyboard scripts suitable for the Manim animation system.
+    你是一位专业的教育视频分镜师和 Manim 动画专家。你的任务是将教学大纲转化为详细的、适合代码生成的逐帧分镜脚本。
 
-    # IMPORTANT: LANGUAGE REQUIREMENT
-    # ALL OUTPUTS MUST BE IN SIMPLIFIED CHINESE (简体中文).
-    # The lecture lines must be natural, spoken Chinese.
+    # 重要语言要求
+    * 所有输出必须为 **简体中文**。
+    * 讲解词（lecture_lines）必须是自然、流畅、**有深度**的口语。
 
-    ## Task
-    Convert the following teaching outline into a detailed step-by-step storyboard script:
-
+    ## 任务输入
     {outline}
     """
 
-    # Add reference image guidance (保持不变)
     if reference_image_path:
         base_prompt += f"""
-    ## Reference Image Available
-    A reference image has been provided to assist with designing the animations for this concept.
-    ... (此处省略 reference image 的中间内容，保持原样即可) ...
+    ## 参考图片
+    请参考提供的图片设计动画视觉元素，尽量还原图片中的关键图示结构。
     """
 
-    # --- 修改重点：优化 Storyboard Requirements ---
     base_prompt += """
-    ## Storyboard Requirements
-    
-    ### Content Structure
-    - For key sections (max 3 sections), use up to 5 lecture lines along with their corresponding 5 animations.
-    - Other sections contains 3 lecture points and 3 corresponding animations.
-    - **Language**: All `title` and `lecture_lines` MUST be in Simplified Chinese.
-    - **Brevity**: Keep lecture lines concise (Max 20 Chinese characters per line).
-    - **Flow**: Ensure a smooth logical flow between steps.
+    ## 分镜设计要求 (CRITICAL)
 
-    ### Visual Design
-    - Colors: Background fixed at #000000. Use professional, high-contrast color palettes (e.g., #89CFF0 for focus, #FFFFFF for text).
-    - Element Labeling: Assign clear labels in Chinese near all elements.
+    ### 1. 内容与讲解 (Content)
+    - **解释性**：讲解词不要只读定义，要解释“为什么”。允许每行讲解词稍微长一点（建议 20-40 字），把逻辑讲透。
+    - **数量**：核心章节（Key Sections）可以使用最多 6-8 组 [讲解词+动画] 的配对，确保节奏不赶。普通章节 3-5 组。
 
-    ### Animation Effects (CRITICAL FOR QUALITY)
-    - **Smoothness**: Avoid rapid flashing or "ghostly" jittering. Use smooth interpolations (e.g., `run_time=1.5` for complex moves).
-    - **Transitions**: Use `Transform`, `ReplacementTransform`, or `Write` for smooth transitions between states. Avoid simply `FadeIn`/`FadeOut` for everything.
-    - **Sync**: Animation steps must closely correspond to the meaning of the lecture points.
+    ### 2. 视觉设计 (Visuals)
+    - **背景**：纯黑背景 (#000000)。
+    - **配色**：使用高对比度、专业的配色方案（如 Blue, Teal, Yellow），避免使用暗淡的颜色。
+    - **布局**：左侧是讲解文本，右侧是 6x6 的动画网格。
 
-    ### Constraints
-    - No panels or 3D methods.
-    - Focus animations on visualizing concepts that are difficult to grasp from lecture lines alone.
-    - Do not involve any external elements (SVGs/assets) unless specified.
+    ### 3. 动画质量控制 (防止鬼畜/Ghosting) - 非常重要！
+    - **禁止暴力变换**：不要对结构完全不同的物体使用 `Transform`（例如不要直接把一个复杂的公式 Transform 成一个圆形）。这种情况下请使用 `FadeOut` 前者，再 `FadeIn` 后者。
+    - **文字变换**：对于文字/公式的推导，明确指明使用 `TransformMatchingTex` 或 `TransformMatchingShapes`。
+    - **留白时间**：在每一个动作完成后，必须暗示代码端留有 `wait(1)` 或 `wait(2)` 的时间，给观众思考的空隙。
+    - **平滑移动**：对于物体的移动，使用 `run_time=1.5` 或更慢的速度，展现移动轨迹。
 
-    MUST output the storyboard design in JSON format:
+    ### 4. 连贯性 (Coherence)
+    - **视觉锚点**：如果一个物体在上一行讲解中出现了，且在下一行中仍然相关，**不要清除它**，让它保持在屏幕上或移动到新位置。
+
+    必须输出为以下 JSON 格式：
     {{
         "sections": [
             {{
                 "id": "section_1",
-                "title": "Sec 1: 章节标题(中文)",
-                "lecture_lines": ["第一句讲解词", "第二句讲解词", ...],
+                "title": "章节标题",
+                "lecture_lines": [
+                    "第一句详细的讲解词，解释原理...",
+                    "第二句讲解词，引导观众观察右侧..."
+                ],
                 "animations": [
-                    "Animation step 1: (Describe the visual action in English or Chinese)",
-                    ...
+                    "Animation 1: [详细描述] 创建一个黄色圆圈在 B3 位置。使用 Write 动画。",
+                    "Animation 2: [详细描述] 将黄色圆圈平滑移动到 D3，同时显现出轨迹线。避免闪烁。"
                 ]
             }},
             ...
@@ -70,46 +64,46 @@ def get_prompt2_storyboard(outline, reference_image_path):
 
 def get_prompt_download_assets(storyboard_data):
     return f"""
-Analyze this educational video storyboard and identify at most 4 different ESSENTIAL visual elements that MUST be represented with downloadable icons/images (not manually drawn shapes).
+分析这份教育视频分镜脚本，识别出最多 4 个**必须**使用下载图标/图片（而非手动绘制形状）来表示的关键视觉元素。
 
-Content:
+内容 (Content):
 {storyboard_data}
 
-Selection Criteria:
-1. Only choose elements that appear in **introduction** or **application** sections, and that are:
-   - Real-world, recognizable physical objects
-   - Visually distinctive enough that a generic shape would not be sufficient
-   - Concrete, not abstract concepts
-2. Prioritize: specific animals, characters, vehicles, tools, devices, landmarks, everyday objects
-3. IGNORE and NEVER include:
-   - Abstract concepts (e.g., justice, communication)
-   - Symbols or icons for ideas (e.g., letters, formulas, diagrams, trees in data structure)
-   - Geometric shapes, arrows, or math-related visuals
-   - Any object composed entirely of basic shapes without unique visual identity
+选择标准 (Selection Criteria):
+1. 仅选择出现在**介绍 (Introduction)** 或 **应用 (Application)** 章节中的元素，且必须满足：
+   - 现实世界中可识别的物理对象
+   - 视觉特征鲜明，仅用通用几何形状不足以表达
+   - 具体的实物，而非抽象概念
+2. 优先选择：具体的动物、角色、交通工具、工具、设备、地标、日常物品。
+3. **忽略且绝不包含**：
+   - 抽象概念（如：正义、交流）
+   - 思想的符号或图标（如：字母、公式、图表、数据结构树）
+   - 几何形状、箭头或数学相关的视觉元素
+   - 任何完全由基本形状组成且无独特视觉身份的物体
 
-Output format:
-- Output ONLY the object keywords, each keyword must be one word, one per line, all lowercase, no numbering, no extra text.
+输出格式 (Output format):
+- **仅输出英文关键词**（为了适配搜索引擎），每个关键词占一行，全小写，无编号，无额外文本。
 """
 
 
 def get_prompt_place_assets(asset_mapping, animations_structure):
     return f"""
-You need to enhance only the animations by incorporating downloaded assets where appropriate.
+你需要通过插入已下载的素材来增强动画描述。
 
-Asset list:
+可用素材列表 (Asset list):
 {asset_mapping}
 
-Current Animations Data:
+当前动画数据 (Current Animations Data):
 {animations_structure}
 
-Instructions:
-- For each animation, determine if any downloaded assets should be incorporated.
-- Only choose the most relevant asset for the animation step that needs.
-- Insert the **abstract path** of asset in the form: [Asset: XXX].
-- CAN ONLY use the assets in **THE FIRST and THE LAST** sections.
-- Keep the same structure: return an array with section_index, section_id, and enhanced animations.
-- Only modify the animation descriptions to include asset references.
-- Do not change section_index or section_id.
+指令 (Instructions):
+- 对于每一个动画步骤，判断是否应该融入已下载的素材。
+- 仅为需要的动画步骤选择最相关的一个素材。
+- 以此格式插入素材的**抽象路径**：[Asset: XXX]。
+- **仅限**在**第一个和最后一个**章节中使用素材。
+- 保持结构不变：返回一个包含 section_index, section_id 和 enhanced animations 的 JSON 数组。
+- 仅修改动画描述以包含素材引用。
+- 不要修改 section_index 或 section_id。
 
-Return only the enhanced animations data as valid JSON array:
+仅返回增强后的动画数据，必须是有效的 JSON 数组格式：
 """

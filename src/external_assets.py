@@ -48,7 +48,8 @@ class SmartSVGDownloader:
     def _build_enhancement_prompt(self, storyboard: Dict, downloaded_assets: Dict) -> str:
         asset_mapping = ""
         if downloaded_assets:
-            asset_mapping = "Available Assets:\n"
+            # 修改为中文标签，与 stage2 Prompt 配合
+            asset_mapping = "可用素材列表 (Available Assets):\n"
             for element, filepath in downloaded_assets.items():
                 asset_mapping += f"- {element}: [Asset: {filepath}]\n"
             asset_mapping += "\n"
@@ -103,10 +104,10 @@ class SmartSVGDownloader:
             return enhanced_storyboard
 
         except json.JSONDecodeError as e:
-            print(f"API response parsing failed: {e}")
+            print(f"API 响应解析失败: {e}")
             return original_storyboard
         except Exception as e:
-            print(f"Error occurred while processing API response: {e}")
+            print(f"处理 API 响应时出错: {e}")
             return original_storyboard
 
     def _analyze_assets_needed(self, storyboard_data) -> List[str]:

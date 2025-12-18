@@ -1,108 +1,100 @@
+# prompts/stage5_eva.py
 import json
 
-
 def get_prompt_aes(knowledge_point):
-    # context
+    # 上下文前缀
     prefix = ""
     if knowledge_point:
         prefix = f"""
-**KNOWLEDGE POINT CONTEXT:**
-This educational video is designed to teach: "{knowledge_point}"
+**知识点背景:**
+本教育视频旨在教授: "{knowledge_point}"
 
-Please evaluate the video specifically in relation to how effectively it teaches this particular knowledge point. Consider whether the content, animations, and presentation approach are appropriate and effective for conveying this specific concept.
-
+请专门评估该视频在教授这一特定知识点方面的有效性。考虑其内容、动画和呈现方式是否适合传达这一特定概念。
 """
 
     return f"""
-You are an expert educational content evaluator specializing in instructional videos with synchronized presentations and animations. Please thoroughly analyze the provided educational video across five critical dimensions and provide detailed scoring.
+你是一位专注于教学视频的教育内容评估专家，特别擅长分析包含同步演示和动画的视频。请从五个关键维度对提供的教育视频进行深入分析并给出详细评分。
 
 {prefix}
 
-**EVALUATION FRAMEWORK:**
+**评估框架 (EVALUATION FRAMEWORK):**
 
-**1. Element Layout (20 points)**
-Assess the spatial arrangement and organization of visual elements:
-- Clarity and readability of text/diagrams in the presentation (left side)
-- Optimal positioning and sizing of animated content (right side)
-- Balance between presentation and animation areas
-- Appropriate use of whitespace and visual hierarchy
-- Consistency in font sizes, colors, and element positioning
-- Overall aesthetic appeal and professional appearance
+**1. 元素布局 (Element Layout) - 20分**
+评估视觉元素的空间安排和组织：
+- 左侧演示文稿（文本/图表）的清晰度和可读性
+- 右侧动画内容的最佳定位和尺寸
+- 演示区与动画区之间的平衡
+- 留白和视觉层次的适当使用
+- 字体大小、颜色和元素位置的一致性
+- 整体美感和专业外观
 
-**2. Attractiveness (20 points)**
-Evaluate the visual appeal and engagement factors:
-- Color scheme harmony and appropriateness for educational content
-- Visual design quality and modern aesthetic
-- Engaging animation styles and effects
-- Creative use of visual metaphors and illustrations
-- Ability to capture and maintain learner attention
-- Professional presentation quality
+**2. 吸引力 (Attractiveness) - 20分**
+评估视觉吸引力和参与因素：
+- 配色方案的和谐性及其对教育内容的适宜性
+- 视觉设计质量和现代审美
+- 引人入胜的动画风格和效果
+- 视觉隐喻和插图的创造性使用
+- 捕捉和保持学习者注意力的能力
 
-**3. Logic Flow (20 points)**
-Analyze the pedagogical structure and content progression:
-- Clear introduction, development, and conclusion of concepts
-- Logical sequence of information presentation
-- Smooth transitions between topics and concepts
-- Appropriate pacing for learning comprehension
-- Coherent connection between presentation content and animations
-- Progressive complexity building (scaffolding)
+**3. 逻辑流 (Logic Flow) - 20分**
+分析教学结构和内容推进：
+- 概念的引入、发展和总结是否清晰
+- 信息呈现的逻辑顺序
+- 话题和概念之间的过渡是否平滑
+- 学习理解的节奏是否适宜
+- 演示内容与动画之间的连贯联系
+- 循序渐进的复杂性构建（脚手架教学）
 
-**4. Accuracy and Depth (20 points)**
-Evaluate content quality and educational value:
-- Factual correctness of all presented information
-- Appropriate depth and complexity for the specific knowledge point
-- Comprehensive coverage of the key concepts within the knowledge point
-- Clarity of explanations and concept definitions relevant to the topic
-- Effective use of examples and illustrations that support the knowledge point
-- Alignment between video content and the intended learning objective
-- Scientific/academic rigor appropriate for the subject matter
+**4. 准确性与深度 (Accuracy and Depth) - 20分**
+评估内容质量和教育价值：
+- 所有呈现信息的事实正确性
+- 针对该知识点的深度和复杂性是否适宜
+- 是否全面覆盖了知识点的关键概念
+- 解释和概念定义的清晰度
+- 支持知识点的例子和插图的有效性
+- 视频内容与预期学习目标的一致性
 
-**5. Visual Consistency (20 points)**
-Assess uniformity and coherence throughout:
-- Consistent visual style across all elements
-- Uniform color palette and design language
-- Coherent animation styles and timing
-- Consistent typography and formatting
-- Smooth integration between static and animated elements
-- Maintaining visual standards throughout the entire video
+**5. 视觉一致性 (Visual Consistency) - 20分**
+评估整体的统一性和连贯性：
+- 所有元素间视觉风格的一致性
+- 统一的色调和设计语言
+- 连贯的动画风格和时机
+- 一致的排版和格式
+- 静态和动态元素之间的平滑融合
 
-**SCORING INSTRUCTIONS:**
-- Provide a score for each dimension (exact decimal allowed)
-- Calculate overall score as sum
-- Provide specific feedback for each dimension, considering the knowledge point context
-- Evaluate whether the video effectively teaches the specified knowledge point
-- Assess if the pedagogical approach is suitable for the subject matter
-- Consider if animations and visual elements appropriately support the knowledge point
+**评分说明:**
+- 为每个维度提供评分（允许小数）
+- 计算总分
+- 针对每个维度提供具体的中文反馈
+- 评估视频是否有效地教授了指定的知识点
 
-**RESPONSE FORMAT:**
-MUST structure your response in the following JSON format:
+**响应格式:**
+必须严格按照以下 JSON 格式输出:
 
 {{
 "element_layout": {{
     "score": [0-20],
-    "feedback": "Detailed analysis of layout quality..."
+    "feedback": "关于布局质量的详细中文分析..."
 }},
 "attractiveness": {{
     "score": [0-20],
-    "feedback": "Assessment of visual appeal..."
+    "feedback": "关于视觉吸引力的评估..."
 }},
 "logic_flow": {{
     "score": [0-20],
-    "feedback": "Analysis of pedagogical structure..."
+    "feedback": "关于教学结构的分析..."
 }},
 "accuracy_depth": {{
     "score": [0-20],
-    "feedback": "Evaluation of content quality..."
+    "feedback": "关于内容质量的评估..."
 }},
 "visual_consistency": {{
     "score": [0-20],
-    "feedback": "Assessment of visual uniformity..."
+    "feedback": "关于视觉统一性的评估..."
 }},
 "overall_score": [0-100],
-"summary": "Overall assessment and key recommendations...",
-"strengths": ["List of notable strengths"],
-"improvements": ["List of suggested improvements"]
+"summary": "整体评估和关键建议...",
+"strengths": ["显著优点列表"],
+"improvements": ["建议改进列表"]
 }}
-
-Please analyze the video carefully and provide comprehensive, constructive feedback that will help improve future educational content creation.
 """

@@ -147,7 +147,8 @@ class SelectiveKnowledgeUnlearning:
         api = use_video_api if use_video_api else self.mllm_api
 
         def build_prompt(i: int, q: Question) -> str:
-            return f"{prefix}\n\n{self._format_mcq_prompt_block(i, q)}Please answer with a single letter (A|B|C|D) then a brief explanation."
+            # 统一要求使用中文简要解释
+            return f"{prefix}\n\n{self._format_mcq_prompt_block(i, q)}请用单个字母 (A|B|C|D) 回答，然后附上一句简短的中文解释。"
 
         responses: List[Optional[str]] = [None] * len(questions)
         with ThreadPoolExecutor(max_workers=self.per_question_workers) as pool:
@@ -167,7 +168,8 @@ class SelectiveKnowledgeUnlearning:
         return self._grade_batch(questions, responses)
 
     def assess_baseline(self, concept: str, questions: List[Question]) -> Tuple[float, List[str]]:
-        prefix = "You are taking a multiple-choice test. Output: letter on first line, then brief explanation."
+        # 修改为中文指令，确保基准测试也在中文语境下进行
+        prefix = "你正在参加一场多项选择题考试。请在第一行输出选项字母（A/B/C/D），然后简要说明理由（中文）。"
         return self._assess_stage_parallel(prefix, questions)
 
     def assess_with_unlearning(self, concept: str, questions: List[Question]) -> Tuple[float, List[str]]:
@@ -181,23 +183,23 @@ class SelectiveKnowledgeUnlearning:
     def evaluate_educational_video(
         self, concept: str, questions: List[Question], video_api_fn: Callable[[str], str]
     ) -> EvaluationResult:
-        print(f"Start evaluation: {concept}")
+        print(f"开始评估: {concept}")
 
         # Step 1：Baseline
-        print("Step 1: Baseline (no unlearning, no video)")
+        print("步骤 1: 基准测试 (Baseline - 无遗忘，无视频)")
         pre_score, pre_resps = self.assess_baseline(concept, questions)
-        print(f"Baseline score: {pre_score:.3f}")
+        print(f"基准得分: {pre_score:.3f}")
 
         # Step 2：Unlearning-only
-        print("Step 2: Unlearning-only")
+        print("步骤 2: 仅遗忘 (Unlearning-only)")
         post_unlearn_score, post_unlearn_resps = self.assess_with_unlearning(concept, questions)
-        print(f"Unlearning-only score: {post_unlearn_score:.3f}")
+        print(f"遗忘后得分: {post_unlearn_score:.3f}")
         unlearn_success = post_unlearn_score <= pre_score  # 简单启发式
 
         # Step 3：Unlearning + Video
-        print("Step 3: Unlearning + Video")
+        print("步骤 3: 遗忘 + 视频学习 (Unlearning + Video)")
         post_video_score, post_video_resps = self.assess_with_unlearning_and_video(concept, questions, video_api_fn)
-        print(f"Unlearning + Video score: {post_video_score:.3f}")
+        print(f"观看视频后得分: {post_video_score:.3f}")
 
         # Overall Score
         gain = post_video_score - post_unlearn_score
@@ -210,20 +212,20 @@ class SelectiveKnowledgeUnlearning:
             learning_gain=gain,
             detailed_responses={"baseline": pre_resps, "post_unlearning": post_unlearn_resps, "post_video": post_video_resps},
         )
-        print(f"Done: gain={gain:.3f}")
+        print(f"完成: 增益 (gain)={gain:.3f}")
         return result
 
 
 def format_evaluation_report(results: List[EvaluationResult]) -> str:
     report = """
 ========================================
-SKU EDUCATIONAL VIDEO EVALUATION REPORT
+SKU 教育视频效果评估报告 (选择性遗忘测试)
 ========================================
 
 """
 
     if not results:
-        return report + "No results.\n"
+        return report + "无结果 (No results)。\n"
 
     total_concepts = len(results)
     successful_unlearning = sum(1 for r in results if r.unlearning_success)
@@ -235,18 +237,18 @@ SKU EDUCATIONAL VIDEO EVALUATION REPORT
     def _safe_mean(xs):
         return float(np.mean(xs)) if len(xs) > 0 else float("nan")
 
-    report += "DETAILED RESULTS BY CONCEPT:\n"
+    report += "各概念详细结果 (DETAILED RESULTS BY CONCEPT):\n"
 
     for result in results:
-        effectiveness_rating = "High" if result.learning_gain > 0.3 else "Medium" if result.learning_gain > 0.1 else "Low"
+        effectiveness_rating = "高 (High)" if result.learning_gain > 0.3 else "中 (Medium)" if result.learning_gain > 0.1 else "低 (Low)"
         report += f"""
-        CONCEPT: {result.concept}
-        ├── Unlearning Success: {'✓' if result.unlearning_success else '✗'}
-        ├── Pre-unlearning Score: {result.pre_unlearning_score:.3f}
-        ├── Post-unlearning Score: {result.post_unlearning_score:.3f}
-        ├── Post-video Score: {result.post_video_score:.3f}
-        ├── Learning Gain: {result.learning_gain:.3f}
-        └── Video Effectiveness: {effectiveness_rating}
+        概念 (CONCEPT): {result.concept}
+        ├── 遗忘成功 (Unlearning Success): {'✓' if result.unlearning_success else '✗'}
+        ├── 遗忘前得分 (Pre-unlearning Score): {result.pre_unlearning_score:.3f}
+        ├── 遗忘后得分 (Post-unlearning Score): {result.post_unlearning_score:.3f}
+        ├── 观看视频后得分 (Post-video Score): {result.post_video_score:.3f}
+        ├── 学习增益 (Learning Gain): {result.learning_gain:.3f}
+        └── 视频有效性评级 (Effectiveness): {effectiveness_rating}
 
         """
 
@@ -263,23 +265,23 @@ SKU EDUCATIONAL VIDEO EVALUATION REPORT
         d = (mu / sd) if sd > 0 else float("inf")
 
         report += f"""
-        STATISTICAL ANALYSIS (on successfully unlearned concepts):
-        - Learning Gain Distribution: μ={mu:.3f}, σ={sd:.3f}, n={n}
-        - Significance Test (H0: no learning): t={t_stat:.3f}, p={p_value:.3f}
-        - Effect Size (Cohen's d): {d:.3f}
-        - 95% Confidence Interval: [{ci_low:.3f}, {ci_high:.3f}]
+        统计分析 (针对成功遗忘的概念):
+        - 学习增益分布: μ={mu:.3f}, σ={sd:.3f}, n={n}
+        - 显著性检验 (H0: 无学习效果): t={t_stat:.3f}, p={p_value:.3f}
+        - 效应量 (Cohen's d): {d:.3f}
+        - 95% 置信区间: [{ci_low:.3f}, {ci_high:.3f}]
 
         """
 
     report += "=" * 50 + "\n\n"
     report += f"""
-SUMMARY STATISTICS:
-- Total Concepts Evaluated: {total_concepts}
-- Successful Unlearning Rate: {successful_unlearning}/{total_concepts} ({(successful_unlearning/total_concepts*100):.1f}%)
-- Average Pre-unlearning Score: {_safe_mean(pre_scores):.3f}
-- Average Post-unlearning Score: {_safe_mean(post_unlearn_scores):.3f}
-- Average Post-video Score: {_safe_mean(post_video_scores):.3f}
-- Average Learning Gain: {_safe_mean(gains)*100:.1f}
+统计摘要 (SUMMARY STATISTICS):
+- 评估概念总数: {total_concepts}
+- 成功遗忘率: {successful_unlearning}/{total_concepts} ({(successful_unlearning/total_concepts*100):.1f}%)
+- 平均遗忘前得分: {_safe_mean(pre_scores):.3f}
+- 平均遗忘后得分: {_safe_mean(post_unlearn_scores):.3f}
+- 平均观看视频后得分: {_safe_mean(post_video_scores):.3f}
+- 平均学习增益: {_safe_mean(gains)*100:.1f}%
 
 """
 

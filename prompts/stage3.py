@@ -1,51 +1,44 @@
 import os
 
-
 def get_prompt3_code(regenerate_note, section, base_class):
     return f"""
-You are an expert Manim animator using Manim Community Edition v0.19.0. 
-Please generate a high-quality Manim class based on the following teaching script.
+你是一位精通 Manim Community Edition v0.19.0 的动画代码专家。
+请根据以下脚本生成高质量的 Python 代码。
+
 {regenerate_note}
 
-1. Basic Requirements:
-- Use the provided TeachingScene base class without modification.
-- **CHINESE SUPPORT (CRITICAL)**: 
-  - Any text displayed on screen (labels, titles, explanations) MUST be in Simplified Chinese.
-  - **FONT SETTING**: When creating `Text` objects containing Chinese, YOU MUST SPECIFY A FONT that supports Chinese.
-  - **Example**: `Text("二分查找", font="Microsoft YaHei", font_size=24)` or `Text("你好", font="SimHei")`.
-  - Do NOT use `Tex` or `MathTex` for Chinese characters unless you are sure the LaTeX environment supports it (safest to use `Text` with font).
+### 核心规范 (必须严格遵守)
 
-2. Animation Quality & Smoothness:
-- **Timing**: Set appropriate `run_time` (default is often too fast). Use `run_time=1.0` or `1.5` for clear visibility.
-- **Transitions**: Prefer `TransformMatchingShapes` or `ReplacementTransform` for fluid changes.
-- **Color**: Use the `animate` syntax for smooth color changes (e.g., `obj.animate.set_color(RED)`).
+1. **基础类与中文支持**:
+   - 继承提供的 `TeachingScene` 类。
+   - **中文字体**：所有 `Text` 对象必须指定支持中文的字体。推荐使用 `font="Microsoft YaHei"` 或 `font="SimHei"`。
+   - **不要**使用 `Tex` 或 `MathTex` 来渲染纯中文句子（会报错或乱码），仅在渲染数学公式时使用 `MathTex`。
 
-3. Visual Anchor System (MANDATORY):
-- Use 6x6 grid system (A1-F6) for precise positioning.
-- All labels must be positioned within 1 grid unit of their corresponding objects
-- Grid layout (right side only):
-lecture |  A1  A2  A3  A4  A5  A6
-        |  B1  B2  B3  B4  B5  B6
-        |  C1  C2  C3  C4  C5  C6
-        |  D1  D2  D3  D4  D5  D6
-        |  E1  E2  E3  E4  E5  E6
-        |  F1  F2  F3  F4  F5  F6
+2. **消除“鬼畜”现象 (Anti-Ghosting Guidelines)**:
+   - **文字变换**：当文本发生变化时，优先使用 `TransformMatchingShapes(old_text, new_text)` 或 `FadeTransform(old, new)`。不要使用原始 `Transform`。
+   - **物体变换**：如果物体形状差异巨大（如 `Square` 变 `Circle`），使用 `ReplacementTransform`。
+   - **时间控制**：
+     - 标准动作：`run_time=1.0` 到 `1.5`。
+     - 复杂推导：`run_time=2.0`。
+     - **必须等待**：在每一个动画动作（`self.play(...)`）之后，**必须**添加 `self.wait(1)` 或 `self.wait(2)`，确保观众看清楚。
 
-4. POSITIONING METHODS:
-- Point example: self.place_at_grid(obj, 'B2', scale_factor=0.8)
-- Area example: self.place_in_area(obj, 'A1', 'C3', scale_factor=0.7)
-- NEVER use .to_edge(), .move_to(), or manual positioning!
+3. **视觉锚点与布局 (6x6 Grid)**:
+   - 使用 `self.place_at_grid(obj, 'B2')` 等方法。
+   - 保持布局整洁，不要让文字覆盖图形。
 
-5. TEACHING CONTENT:
-- Title: {section.title}
-- Lecture Lines: {section.lecture_lines}
-- Animation Description: {'; '.join(section.animations)}
+4. **代码结构**:
+   - 标题: {section.title}
+   - 讲解词 (List): {section.lecture_lines}
+   - 动画指令 (List): {section.animations}
 
-6. STRUCTURE FOR CODE:
-Use the following comment format to indicate which block corresponds to which line:
-# === Animation for Lecture Line 1 ===
+   **逻辑对应**：
+   - 遍历 `lecture_lines`。
+   - 对于每一行讲解词：
+     1. 首先：`self.highlight_lecture_line(index)` (假设基类中有此方法，或仅改变颜色)。
+     2. 然后：执行对应的动画。
+     3. 最后：`self.wait(2)`。
 
-7. EXAMPLE STRUCTURE:
+5. **示例代码结构**:
 ```python
 from manim import *
 
@@ -53,29 +46,41 @@ from manim import *
 
 class {section.id.title().replace('_', '')}Scene(TeachingScene):
     def construct(self):
-        # The title and lecture_lines will be passed in Chinese
+        # 初始化布局
         self.setup_layout("{section.title}", {section.lecture_lines})
         
-        # rest of animation code
-        # === Animation for Lecture Line 1 ===
-        # Example of Chinese Text
-        # label = Text("目标值", font="Microsoft YaHei", font_size=24, color=YELLOW)
-        ...
+        # === 第 1 句讲解 ===
+        # 1. 高亮左侧文本 (手动模拟)
+        self.play(self.lecture[0].animate.set_color(YELLOW), run_time=0.5)
+        
+        # 2. 执行右侧动画
+        circle = Circle(color=BLUE, fill_opacity=0.5)
+        self.place_at_grid(circle, 'C3')
+        self.play(DrawBorderThenFill(circle), run_time=1.5)
+        
+        # 3. 留白时间 (CRITICAL)
+        self.wait(2)
+
+        # === 第 2 句讲解 ===
+        self.play(self.lecture[0].animate.set_color(WHITE), self.lecture[1].animate.set_color(YELLOW), run_time=0.5)
+        
+        # 更好的变换效果
+        square = Square(color=RED, fill_opacity=0.5)
+        self.place_at_grid(square, 'C3')
+        self.play(ReplacementTransform(circle, square), run_time=1.5)
+        
+        self.wait(2)
 ```
 
-8. MANDATORY CONSTRAINTS:
-- Colors: Use light, distinguishable hexadecimal colors.
-- Scaling: Maintain appropriate font sizes and object scales for readability.
-- Consistency: Do not apply any animation to the lecture lines except for color changes; The lecture lines and title's size and position must remain unchanged.
-- Assets: If provided, MUST use the elements in the Animation Description formatted as [Asset: XXX/XXX.png] (abstract path).
-- Simplicity: Avoid 3D functions, complex panels, or external dependencies except for filenames in Animation Description.
+6. **强制约束**:
+- 颜色使用明亮的 hex 颜色。
+- 严禁使用复杂的 3D 场景（除非必要），保持 2D 清晰图解。
+- 不要在动画中改变左侧 lecture_lines 的位置或大小，只改变颜色。
 """
 
-def get_regenerate_note(attempt, MAX_REGENERATE_TRIES):
-    return f"""    
-**IMPORTANT NOTE:** This is attempt {attempt}/{MAX_REGENERATE_TRIES} to generate working code.
-The previous attempts failed to run correctly. Please:
-1. Use only basic, well-tested Manim functions
-2. Avoid complex animations that might cause errors
-3. Use simple, reliable Manim patterns
+def get_regenerate_note (attempt, MAX_REGENERATE_TRIES):
+    return f"""注意：这是第 {attempt}/{MAX_REGENERATE_TRIES} 次尝试生成代码。上一次生成的代码运行失败或效果不佳。请：
+简化复杂的动画逻辑，优先保证运行成功。
+确保所有的变量在使用前都已定义。
+检查 self.wait () 是否充足。
 """
