@@ -69,6 +69,7 @@ class TeachingVideoAgent:
         self.learning_topic = knowledge_point
         self.idx = idx
         self.cfg = cfg
+        self.folder = folder  # 修复：保存 folder 路径，供 get_serializable_state 使用
 
         self.use_feedback = cfg.use_feedback
         self.use_assets = cfg.use_assets
@@ -863,6 +864,9 @@ def build_and_parse_args():
     parser.add_argument("--parallel_group_num", type=int, default=3)
     parser.add_argument("--max_concepts", type=int, help="Limit # concepts for a quick run, -1 for all", default=-1)
     parser.add_argument("--knowledge_point", type=str, help="if knowledge_file not given, can ignore", default=None)
+    
+    # 新增参数：最大并行工作进程数
+    parser.add_argument("--max_workers", type=int, default=None, help="Force specific number of workers, overriding auto-detection")
 
     return parser.parse_args()
 
@@ -907,12 +911,15 @@ if __name__ == "__main__":
         max_mllm_fix_bugs_tries=args.max_mllm_fix_bugs_tries,
         feedback_rounds=args.feedback_rounds,
     )
+    
+    # 优先使用命令行参数指定的 workers，否则自动计算
+    real_workers = args.max_workers if args.max_workers is not None else get_optimal_workers()
 
     run_Code2Video(
         knowledge_points,
         folder,
         parallel=args.parallel,
         batch_size=max(1, int(len(knowledge_points) / args.parallel_group_num)),
-        max_workers=get_optimal_workers(),
+        max_workers=real_workers,
         cfg=cfg,
     )

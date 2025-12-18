@@ -1,63 +1,51 @@
 import json
 
-
 def get_prompt2_storyboard(outline, reference_image_path):
     base_prompt = f""" 
-    你是一位专业的教育视频分镜师和 Manim 动画专家。你的任务是将教学大纲转化为详细的、适合代码生成的逐帧分镜脚本。
+    你是一位**硬核算法可视化导演**。请将大纲转化为详细的 Manim 动画脚本。
 
-    # 重要语言要求
-    * 所有输出必须为 **简体中文**。
-    * 讲解词（lecture_lines）必须是自然、流畅、**有深度**的口语。
+    # 通用视觉映射系统 (Universal Visual Mapping System)
 
-    ## 任务输入
+    1.  **多维布局策略 (Layout Strategy)**:
+        - **Code Window (左侧 40%)**: 始终显示代码，高亮执行行。
+        - **Main Visual Area (右侧 60%)**: 
+          - 如果算法涉及单一结构（如数组）：居中显示。
+          - 如果算法涉及**组合结构**（如 图算法 + 优先队列）：
+            - **上部**: 主结构（Graph/Tree）。
+            - **下部**: 辅助结构（Queue/Stack/Table）。
+        - **State Monitor (底部/角落)**: 实时显示的变量值（Cost, Index, True/False）。
+
+    2.  **抽象概念实体化**:
+        - **引用/指针**: 必须画成箭头 (Arrow)。
+        - **递归**: 必须画成**调用栈 (Call Stack)**，用一个个压入的矩形块表示，旁边标注参数值。
+        - **比较/判断**: 必须在屏幕上显示临时的数学不等式（例如 `dist[B] > new_dist`），判定后再消失。
+        - **记忆化/缓存**: 画成一个表格 (Table/Grid)，命中时高亮闪烁。
+
+    3.  **脚本要求**:
+        - 每一句旁白（Lecture Line）必须对应代码的解释。
+        - 每一个动画（Animation）必须对应数据的变化（Create, Transform, FadeOut）。
+
+    ## 输入大纲
     {outline}
     """
 
-    if reference_image_path:
-        base_prompt += f"""
-    ## 参考图片
-    请参考提供的图片设计动画视觉元素，尽量还原图片中的关键图示结构。
-    """
-
     base_prompt += """
-    ## 分镜设计要求 (CRITICAL)
-
-    ### 1. 内容与讲解 (Content)
-    - **解释性**：讲解词不要只读定义，要解释“为什么”。允许每行讲解词稍微长一点（建议 20-40 字），把逻辑讲透。
-    - **数量**：核心章节（Key Sections）可以使用最多 6-8 组 [讲解词+动画] 的配对，确保节奏不赶。普通章节 3-5 组。
-
-    ### 2. 视觉设计 (Visuals)
-    - **背景**：纯黑背景 (#000000)。
-    - **配色**：使用高对比度、专业的配色方案（如 Blue, Teal, Yellow），避免使用暗淡的颜色。
-    - **布局**：左侧是讲解文本，右侧是 6x6 的动画网格。
-
-    ### 3. 动画质量控制 (防止鬼畜/Ghosting) - 非常重要！
-    - **禁止暴力变换**：不要对结构完全不同的物体使用 `Transform`（例如不要直接把一个复杂的公式 Transform 成一个圆形）。这种情况下请使用 `FadeOut` 前者，再 `FadeIn` 后者。
-    - **文字变换**：对于文字/公式的推导，明确指明使用 `TransformMatchingTex` 或 `TransformMatchingShapes`。
-    - **留白时间**：在每一个动作完成后，必须暗示代码端留有 `wait(1)` 或 `wait(2)` 的时间，给观众思考的空隙。
-    - **平滑移动**：对于物体的移动，使用 `run_time=1.5` 或更慢的速度，展现移动轨迹。
-
-    ### 4. 连贯性 (Coherence)
-    - **视觉锚点**：如果一个物体在上一行讲解中出现了，且在下一行中仍然相关，**不要清除它**，让它保持在屏幕上或移动到新位置。
-
-    必须输出为以下 JSON 格式：
-    {{
+    请输出以下 JSON 格式：
+    {
         "sections": [
-            {{
-                "id": "section_1",
-                "title": "章节标题",
-                "lecture_lines": [
-                    "第一句详细的讲解词，解释原理...",
-                    "第二句讲解词，引导观众观察右侧..."
-                ],
+            {
+                "id": "section_id",
+                "title": "标题",
+                "lecture_lines": ["..."],
                 "animations": [
-                    "Animation 1: [详细描述] 创建一个黄色圆圈在 B3 位置。使用 Write 动画。",
-                    "Animation 2: [详细描述] 将黄色圆圈平滑移动到 D3，同时显现出轨迹线。避免闪烁。"
+                    "Define Visual Layout: Split Right Area into Top (Graph) and Bottom (Priority Queue).",
+                    "Action: Highlight code line `heapq.heappush(pq, (0, start))`.",
+                    "Visual: Create a Circle labeled 'Start' in Graph. Create a small Square labeled '(0, S)' appearing in the Queue area.",
+                    "Monitor: Update text `Current Cost = 0`."
                 ]
-            }},
-            ...
+            }
         ]
-    }}
+    }
     """
     return base_prompt
 

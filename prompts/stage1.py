@@ -1,44 +1,50 @@
 def get_prompt1_outline(knowledge_point, duration=5, reference_image_path=None):
     base_prompt = f""" 
-    作为一位顶尖的教学设计专家，你需要设计一个**逻辑严密、循序渐进、以例子为驱动**的教学大纲。
+    你是一位**计算机科学教育架构师**。你需要设计一个**基于执行追踪（Execution Trace）**的深度算法教学大纲。
+
+    目标算法: "{knowledge_point}"
+
+    # 核心指令 (Universal Analysis Protocol)
     
-    # 核心要求 (IMPORTANT)
-    1. **输出语言**：必须使用**简体中文**。
-    2. **叙事连贯性**：不要只是罗列知识点。每一节（Section）之间必须有逻辑承接（例如：“了解了X之后，我们自然会遇到Y问题...”）。
-    3. **深度解释**：确保核心概念有足够的篇幅进行深层原理解析，而不仅仅是展示定义。
+    1.  **算法解构 (Decomposition)**:
+        - 如果这是基础算法（如排序），直接展示过程。
+        - 如果这是**复杂/组合算法**（如 A*搜索、红黑树插入、带有记忆化的DP）：
+          - 必须将视频分为：**“基础状态” -> “遇到的问题/瓶颈” -> “优化策略/核心操作” -> “最终状态”**。
+          - 或者是：**“数据结构A的维护” + “数据结构B的配合”**（例如 LRU Cache = HashMap + DoubleLinkedList）。
 
-    知识点: {knowledge_point}
-    """
+    2.  **用例设计 (Case Engineering)**:
+        - 设计一个**“最小完备集” (Minimal Complete Case)**。
+        - 这个用例不能太简单（导致看不出优化点），也不能太复杂（导致视频冗长）。
+        - *关键*：如果是优化算法，用例必须能触发那个“优化逻辑”（例如：讲剪枝算法，必须构造一个能被剪枝的分支）。
 
-    if reference_image_path:
-        base_prompt += f"""
-    ## 参考图片可用
-    提供了一张参考图片。请分析图片中的视觉元素，并将其融入到大纲的核心讲解环节中。
-    """
+    3.  **变量追踪清单**:
+        - 列出所有核心变量（Trace Variables）。对于复杂算法，可能包含：递归栈深度、当前 Cost、Hash表内容、PQ 队列状态等。
 
-    base_prompt += f"""
-    请严格按照以下 JSON 格式输出：
+    # 输出格式 (JSON)
+    请严格按照以下格式输出：
     {{
-        "topic": "视频标题",
-        "target_audience": "目标受众（如：高中生、大学生、零基础初学者）",
+        "topic": "视频标题（体现深度和硬核，如'从零实现：XXX算法的内存级演示'）",
+        "target_audience": "具备基础编程能力的开发者",
+        "data_case_definition": "详细定义输入数据。例如：'图G：节点A-E，边权如下...；启发式函数 h(n)=...'",
+        "algorithm_components": ["列出涉及的数据结构，如 'Min-Heap', 'Adjacency List', 'Visited Set'"],
         "sections": [
             {{
                 "id": "section_1",
-                "title": "小节标题 (例如：为什么我们需要X？)",
-                "content": "本节详细讲解内容（侧重原理与直觉）",
-                "transition": "本节结束时的承上启下语（用于连接下一节）",
-                "example": "具体的视觉例子"
+                "title": "结构定义与初始化",
+                "content": "展示由哪些基础数据结构组合而成，初始化状态。",
+                "code_mapping": "Class Definition / Init function"
             }},
-            ...
+            {{
+                "id": "section_2",
+                "title": "核心逻辑/优化点演示",
+                "content": "演示算法最精髓的部分（如旋转、松弛、剪枝）。必须展示数据变化。",
+                "code_mapping": "Core Loop / Recursion / State Transition"
+            }}
         ]
     }}
-
-    具体要求：
-    1. 总时长控制在约 {duration} 分钟。
-    2. **逻辑流**：从直观的现实问题引入，到抽象概念的提出，再到具体的应用。
-    3. **数学可视化**：在涉及数学公式时，必须设计配合的几何直观解释。
-    4. **避免跳跃**：对于复杂概念，必须先铺垫前置知识。
-    5. **角色/隐喻**：鼓励使用具体的角色（如“小球”、“观察者”）或隐喻来贯穿整个视频，增强连贯性。
     """
+    
+    if reference_image_path:
+        base_prompt += f"\n注：请参考提供的图片来决定数据结构的视觉风格（如树是画成圆圈还是方块）。\n"
 
     return base_prompt

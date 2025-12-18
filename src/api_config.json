@@ -9,7 +9,7 @@
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "2024-03-01-preview", 
         "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
-        "model": "gpt-3.5-turbo" 
+        "model": "gpt-4o" 
     },
     "gpt5": {
         "base_url": "...",

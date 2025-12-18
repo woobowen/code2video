@@ -342,6 +342,14 @@ class ScopeRefineFixer:
         test_file = output_dir / f"test_{section_id}.py"
 
         # Create test version of code (add quick exit)
+        # 1. 动态获取类名：不要假设类名是 SectionXScene，而是从代码中正则提取
+        class_match = re.search(r"class\s+(\w+)\s*\(", code)
+        if class_match:
+            scene_name = class_match.group(1)
+        else:
+            # Fallback (保底策略)
+            scene_name = f"{section_id.title().replace('_', '')}Scene"
+
         test_code = code.replace(
             "def construct(self):",
             "def construct(self):\n        # Dry run test - quick exit\n        self.wait(0.1)\n        return\n        # Original code below:",
@@ -351,17 +359,18 @@ class ScopeRefineFixer:
             with open(test_file, "w", encoding="utf-8") as f:
                 f.write(test_code)
 
-            scene_name = f"{section_id.title().replace('_', '')}Scene"
+            # 2. 使用提取出的正确类名进行测试
             cmd = ["python", "-c", f"from test_{section_id} import {scene_name}; scene = {scene_name}(); print('Syntax OK')"]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=output_dir, timeout=10)
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=output_dir, timeout=20) # 稍微增加一点超时时间到 20s
 
             test_file.unlink()  # Clean up test file
 
             if result.returncode == 0:
                 return True, None
             else:
-                return False, result.stderr
+                # 返回具体的错误信息
+                return False, f"Dry Run Error for class '{scene_name}': {result.stderr}"
 
         except Exception as e:
             if test_file.exists():
