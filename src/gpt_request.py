@@ -544,26 +544,24 @@ def request_gpt4o(prompt, log_id=None, max_tokens=8000, max_retries=3):
 
 def request_gpt4o_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
     """
-    Makes a request to the gpt-4o-2024-11-20 model with retry functionality.
-
+    Makes a request to the gpt-4o model with retry functionality.
     Args:
         prompt (str): The text prompt to send to the model
         log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
         max_tokens (int, optional): Maximum tokens for response, default 8000
         max_retries (int, optional): Maximum number of retry attempts, default 3
-
     Returns:
         dict: The model's response
     """
     base_url = cfg("gpt4o", "base_url")
-    api_version = cfg("gpt4o", "api_version")
     ak = cfg("gpt4o", "api_key")
     model_name = cfg("gpt4o", "model")
 
-    client = openai.AzureOpenAI(
-        azure_endpoint=base_url,
-        api_version=api_version,
+    # --- MODIFIED: Use standard OpenAI client & 5 min timeout ---
+    client = OpenAI(
+        base_url=base_url,
         api_key=ak,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -591,6 +589,7 @@ def request_gpt4o_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
                 ],
                 max_tokens=max_tokens,
                 extra_headers=extra_headers,
+                timeout=300.0
             )
 
             if completion.usage:
@@ -602,10 +601,11 @@ def request_gpt4o_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
         except Exception as e:
             retry_count += 1
             if retry_count >= max_retries:
-                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+                print(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+                return None, usage_info
 
             # Exponential backoff with jitter
-            delay = (2**retry_count) * 0.1 + (random.random() * 0.1)
+            delay = (2**retry_count) * 1.0 + (random.random() * 0.5)
             print(
                 f"Request failed with error: {str(e)}. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})"
             )
@@ -906,17 +906,17 @@ def request_gpt41(prompt, log_id=None, max_tokens=1000, max_retries=3):
             time.sleep(delay)
 
 
-# 替换 src/gpt_request.py 中的 request_gpt41_token 函数
 def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
     # 读取配置
     base_url = cfg("gpt41", "base_url")
     ak = cfg("gpt41", "api_key")
     model_name = cfg("gpt41", "model")
 
-    # --- 修改点：使用标准 OpenAI Client ---
+    # --- MODIFIED: Use standard OpenAI client & 5 min timeout ---
     client = OpenAI(
         base_url=base_url,
         api_key=ak,
+        timeout=300.0,
     )
     # ------------------------------------
 
@@ -935,6 +935,7 @@ def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 extra_headers=extra_headers,
+                timeout=300.0
             )
 
             if completion.usage:
@@ -950,7 +951,8 @@ def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
                 print(f"Failed after {max_retries} attempts. Last error: {str(e)}")
                 return None, usage_info
             
-            delay = (2**retry_count) * 0.1 + (random.random() * 0.1)
+            # 增加重试等待时间
+            delay = (2**retry_count) * 1.0 + (random.random() * 0.5)
             print(f"Retry {retry_count} error: {str(e)}. Waiting {delay:.2f}s...")
             time.sleep(delay)
 

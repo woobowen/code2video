@@ -82,7 +82,6 @@ class TeachingVideoAgent:
         self.max_mllm_fix_bugs_tries = cfg.max_mllm_fix_bugs_tries
 
         """2. Path for output"""
-        self.folder = folder
         self.output_dir = get_output_dir(idx=idx, knowledge_point=self.learning_topic, base_dir=folder)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -142,7 +141,7 @@ class TeachingVideoAgent:
         outline_file = self.output_dir / "outline.json"
 
         if outline_file.exists():
-            print("📂 ...")
+            print("📂 正在读取大纲...")
             with open(outline_file, "r", encoding="utf-8") as f:
                 outline_data = json.load(f)
         else:
@@ -154,15 +153,15 @@ class TeachingVideoAgent:
             )
             prompt1 = get_prompt1_outline(knowledge_point=self.learning_topic, reference_image_path=refer_img_path)
 
-            print(f"📝 Generating Outline...")
+            print(f"📝 正在生成大纲...")
 
             for attempt in range(1, self.max_regenerate_tries + 1):
                 api_func = self._request_api_and_track_tokens if refer_img_path else self._request_api_and_track_tokens
                 response = api_func(prompt1, max_tokens=self.max_code_token_length)
                 if response is None:
-                    print(f"⚠️ Attempt {attempt} failed, retrying...")
+                    print(f"⚠️ 第 {attempt} 次尝试失败，正在重试...")
                     if attempt == self.max_regenerate_tries:
-                        raise ValueError("API requests failed multiple times")
+                        raise ValueError("API 请求多次失败")
                     continue
                 try:
                     content = response.candidates[0].content.parts[0].text
@@ -178,32 +177,32 @@ class TeachingVideoAgent:
                         json.dump(outline_data, f, ensure_ascii=False, indent=2)
                     break
                 except json.JSONDecodeError:
-                    print(f"⚠️ Outline format invalid on attempt {attempt}, retrying...")
+                    print(f"⚠️ 第 {attempt} 次尝试大纲格式无效，正在重试...")
                     if attempt == self.max_regenerate_tries:
-                        raise ValueError("Outline format invalid multiple times, check prompt or API response")
+                        raise ValueError("大纲格式多次无效，请检查提示词或 API 响应")
 
         self.outline = TeachingOutline(
             topic=outline_data["topic"],
             target_audience=outline_data["target_audience"],
             sections=outline_data["sections"],
         )
-        print(f"== Outline generated: {self.outline.topic}")
+        print(f"== 大纲已生成: {self.outline.topic}")
         return self.outline
 
     def generate_storyboard(self) -> List[Section]:
         """Step 2: Generate teaching storyboard from outline (optionally with asset enhancement)"""
         if not self.outline:
-            raise ValueError("Outline not generated, please generate outline first")
+            raise ValueError("大纲未生成，请先生成大纲")
 
         storyboard_file = self.output_dir / "storyboard.json"
         enhanced_storyboard_file = self.output_dir / "storyboard_with_assets.json"
 
         if enhanced_storyboard_file.exists():
-            print("📂 Found enhanced storyboard, loading...")
+            print("📂 发现已增强的分镜脚本，正在加载...")
             with open(enhanced_storyboard_file, "r", encoding="utf-8") as f:
                 self.enhanced_storyboard = json.load(f)
         elif storyboard_file.exists():
-            print("📂 Found storyboard, loading...")
+            print("📂 发现分镜脚本，正在加载...")
             with open(storyboard_file, "r", encoding="utf-8") as f:
                 storyboard_data = json.load(f)
             if self.use_assets:
@@ -211,7 +210,7 @@ class TeachingVideoAgent:
             else:
                 self.enhanced_storyboard = storyboard_data
         else:
-            print("🎬 Generating storyboard...")
+            print("🎬 正在生成分镜脚本...")
             refer_img_path = (
                 self.knowledge_ref_img_folder / img_name
                 if (img_name := self.KNOWLEDGE2PATH.get(self.learning_topic)) is not None
@@ -227,9 +226,9 @@ class TeachingVideoAgent:
                 api_func = self._request_api_and_track_tokens
                 response = api_func(prompt2, max_tokens=self.max_code_token_length)
                 if response is None:
-                    print(f"⚠️ Outline format invalid on attempt {attempt}, retrying...")
+                    print(f"⚠️ 第 {attempt} 次尝试 API 请求失败，正在重试...")
                     if attempt == self.max_regenerate_tries:
-                        raise ValueError("API requests failed multiple times")
+                        raise ValueError("API 请求多次失败")
                     continue
 
                 try:
@@ -256,9 +255,9 @@ class TeachingVideoAgent:
                     break
 
                 except json.JSONDecodeError:
-                    print(f"⚠️ Storyboard format invalid on attempt {attempt}, retrying...")
+                    print(f"⚠️ 第 {attempt} 次尝试分镜格式无效，正在重试...")
                     if attempt == self.max_regenerate_tries:
-                        raise ValueError("Storyboard format invalid multiple times, check prompt or API response")
+                        raise ValueError("分镜格式多次无效，请检查提示词或 API 响应")
 
         # Parse into Section objects (using enhanced storyboard)
         self.sections = []
@@ -271,12 +270,12 @@ class TeachingVideoAgent:
             )
             self.sections.append(section)
 
-        print(f"== Storyboard processed, {len(self.sections)} sections generated")
+        print(f"== 分镜处理完成，共生成 {len(self.sections)} 个小节")
         return self.sections
 
     def _enhance_storyboard_with_assets(self, storyboard_data: dict) -> dict:
         """Enhance storyboard: smart analysis and download assets"""
-        print("🤖 Enhancing storyboard: smart analysis and download assets...")
+        print("🤖 正在增强分镜：智能分析并下载素材...")
 
         try:
             enhanced_storyboard = process_storyboard_with_assets(
@@ -288,11 +287,11 @@ class TeachingVideoAgent:
             enhanced_storyboard_file = self.output_dir / "storyboard_with_assets.json"
             with open(enhanced_storyboard_file, "w", encoding="utf-8") as f:
                 json.dump(enhanced_storyboard, f, ensure_ascii=False, indent=2)
-            print("✅ Storyboard enhanced with assets")
+            print("✅ 分镜已增强素材")
             return enhanced_storyboard
 
         except Exception as e:
-            print(f"⚠️ Asset download failed, using original storyboard: {e}")
+            print(f"⚠️ 素材下载失败，使用原始分镜: {e}")
             return storyboard_data
 
     def generate_section_code(self, section: Section, attempt: int = 1, feedback_improvements=None) -> str:
@@ -300,12 +299,12 @@ class TeachingVideoAgent:
         code_file = self.output_dir / f"{section.id}.py"
 
         if attempt == 1 and code_file.exists() and not feedback_improvements:
-            print(f"📂 Found existing code for {section.id}, reading...")
+            print(f"📂 发现 {section.id} 的现有代码，正在读取...")
             with open(code_file, "r", encoding="utf-8") as f:
                 code = f.read()
                 self.section_codes[section.id] = code
                 return code
-        # print(f"💻 Generating Manim code for {section.id} (attempt {attempt}/{self.max_regenerate_tries})...")
+        # print(f"💻 正在为 {section.id} 生成 Manim 代码 (尝试 {attempt}/{self.max_regenerate_tries})...")
         regenerate_note = ""
         if attempt > 1:
             regenerate_note = get_regenerate_note(attempt, MAX_REGENERATE_TRIES=self.max_regenerate_tries)
@@ -322,7 +321,7 @@ class TeachingVideoAgent:
                 self.section_codes[section.id] = modified_code
                 return modified_code
             except Exception as e:
-                print(f"⚠️ GridCodeModifier failed, falling back to original code: {e}")
+                print(f"⚠️ GridCodeModifier 失败，回退到原始代码: {e}")
                 code_gen_prompt = get_feedback_improve_code(
                     feedback=get_feedback_list_prefix(feedback_improvements), code=current_code
                 )
@@ -332,7 +331,7 @@ class TeachingVideoAgent:
 
         response = self._request_api_and_track_tokens(code_gen_prompt, max_tokens=self.max_code_token_length)
         if response is None:
-            print(f"❌ Failed to generate code for {section.id} via API call.")
+            print(f"❌ 通过 API 生成 {section.id} 代码失败。")
             return ""
 
         try:
@@ -362,7 +361,7 @@ class TeachingVideoAgent:
             return False
 
         for fix_attempt in range(max_fix_attempts):
-            print(f"🔧 {self.learning_topic} Debugging {section_id} (attempt {fix_attempt + 1}/{max_fix_attempts})")
+            print(f"🔧 {self.learning_topic} 正在调试 {section_id} (尝试 {fix_attempt + 1}/{max_fix_attempts})")
 
             try:
                 scene_name = f"{section_id.title().replace('_', '')}Scene"
@@ -372,7 +371,11 @@ class TeachingVideoAgent:
                 result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=180)
 
                 if result.returncode == 0:
+                    # 注意：-qh 生成的是 1080p60，路径通常是 1080p60 而非 480p15
                     video_patterns = [
+                        self.output_dir / "media" / "videos" / f"{code_file.replace('.py', '')}" / "1080p60" / f"{scene_name}.mp4",
+                        self.output_dir / "media" / "videos" / "1080p60" / f"{scene_name}.mp4",
+                        # 保留旧路径以防万一
                         self.output_dir / "media" / "videos" / f"{code_file.replace('.py', '')}" / "480p15" / f"{scene_name}.mp4",
                         self.output_dir / "media" / "videos" / "480p15" / f"{scene_name}.mp4",
                     ]
@@ -380,7 +383,7 @@ class TeachingVideoAgent:
                     for video_path in video_patterns:
                         if video_path.exists():
                             self.section_videos[section_id] = str(video_path)
-                            print(f"✅ {self.learning_topic} {section_id} finished")
+                            print(f"✅ {self.learning_topic} {section_id} 完成")
                             return True
 
                 current_code = self.section_codes[section_id]
@@ -394,16 +397,16 @@ class TeachingVideoAgent:
                     break
 
             except subprocess.TimeoutExpired:
-                print(f"❌ {self.learning_topic} {section_id} timed out")
+                print(f"❌ {self.learning_topic} {section_id} 超时")
                 break
             except Exception as e:
-                print(f"❌ {self.learning_topic} {section_id} failed with exception: {e}")
+                print(f"❌ {self.learning_topic} {section_id} 失败，异常: {e}")
                 break
 
         return False
 
     def get_mllm_feedback(self, section: Section, video_path: str, round_number: int = 1) -> VideoFeedback:
-        print(f"🤖 {self.learning_topic} Using MLLM to analyze video ({round_number}/{self.feedback_rounds}): {section.id}")
+        print(f"🤖 {self.learning_topic} 使用 MLLM 分析视频 ({round_number}/{self.feedback_rounds}): {section.id}")
 
         current_code = self.section_codes[section.id]
         positions = self.extractor.extract_grid_positions(current_code)
@@ -424,7 +427,7 @@ class TeachingVideoAgent:
                             suggested_improvements.append(f"[LAYOUT] Problem: {prob}; Solution: {sol}")
 
             except json.JSONDecodeError:
-                print(f"⚠️ {self.learning_topic} JSON parse failed, fallback to keyword analysis")
+                print(f"⚠️ {self.learning_topic} JSON 解析失败，回退到关键词分析")
 
                 for m in re.finditer(
                     r"Problem:\s*(.*?);\s*Solution:\s*(.*?)(?=\n|$)", feedback_content, flags=re.IGNORECASE | re.DOTALL
@@ -452,7 +455,7 @@ class TeachingVideoAgent:
             return feedback
 
         except Exception as e:
-            print(f"❌ {self.learning_topic} MLLM analysis failed: {str(e)}")
+            print(f"❌ {self.learning_topic} MLLM 分析失败: {str(e)}")
             return VideoFeedback(
                 section_id=section.id,
                 video_path=video_path,
@@ -464,7 +467,7 @@ class TeachingVideoAgent:
     def optimize_with_feedback(self, section: Section, feedback: VideoFeedback) -> bool:
         """Optimize the code based on feedback from the MLLM"""
         if not feedback.has_issues or not feedback.suggested_improvements:
-            print(f"✅ {self.learning_topic} {section.id} no optimization needed")
+            print(f"✅ {self.learning_topic} {section.id} 无需优化")
             return True
 
         # === Step 1: back up original code ===
@@ -472,7 +475,7 @@ class TeachingVideoAgent:
 
         for attempt in range(self.max_feedback_gen_code_tries):
             print(
-                f"🎯 {self.learning_topic} MLLM feedback optimization {section.id} code, attempt {attempt + 1}/{self.max_feedback_gen_code_tries}"
+                f"🎯 {self.learning_topic} MLLM 反馈优化 {section.id} 代码，尝试 {attempt + 1}/{self.max_feedback_gen_code_tries}"
             )
 
             # === Step 2: back up original code and apply improvements ===
@@ -494,22 +497,22 @@ class TeachingVideoAgent:
                     if original_video_path.exists():
                         original_video_path.rename(optimized_video_path)
                         self.section_videos[section.id] = str(optimized_video_path)
-                        print(f"✨ {self.learning_topic} {section.id} optimized video saved: {optimized_video_path}")
+                        print(f"✨ {self.learning_topic} {section.id} 优化后的视频已保存: {optimized_video_path}")
                     else:
-                        print(f"⚠️ {self.learning_topic} {section.id} original video file not found: {original_video_path}")
+                        print(f"⚠️ {self.learning_topic} {section.id} 未找到原始视频文件: {original_video_path}")
                 else:
-                    print(f"⚠️ {self.learning_topic} {section.id} no optimized video path found")
+                    print(f"⚠️ {self.learning_topic} {section.id} 未找到优化后的视频路径")
                 return True
             else:
                 print(
-                    f"❌ {self.learning_topic} {section.id} MLLM optimization failed, attempt {attempt + 1}/{self.max_feedback_gen_code_tries}"
+                    f"❌ {self.learning_topic} {section.id} MLLM 优化失败，尝试 {attempt + 1}/{self.max_feedback_gen_code_tries}"
                 )
 
         return False
 
     def generate_codes(self) -> Dict[str, str]:
         if not self.sections:
-            raise ValueError(f"{self.learning_topic} Please generate teaching sections first")
+            raise ValueError(f"{self.learning_topic} 请先生成教学小节")
 
         def task(section):
             try:
@@ -523,7 +526,7 @@ class TeachingVideoAgent:
             for future in as_completed(futures):
                 section_id, err = future.result()
                 if err:
-                    print(f"❌ {self.learning_topic} {section_id} code generation failed: {err}")
+                    print(f"❌ {self.learning_topic} {section_id} 代码生成失败: {err}")
 
         return self.section_codes
 
@@ -543,10 +546,10 @@ class TeachingVideoAgent:
                     else:
                         pass
                 except Exception as e:
-                    print(f"⚠️ {section_id} attempt {regenerate_attempt + 1} raised exception: {str(e)}")
+                    print(f"⚠️ {section_id} 第 {regenerate_attempt + 1} 次尝试抛出异常: {str(e)}")
                     continue
             if not success:
-                print(f"❌{self.learning_topic} {section_id} all failed, skipping section")
+                print(f"❌ {self.learning_topic} {section_id} 全部失败，跳过该小节")
                 return False
 
             # MLLM feedback
@@ -555,7 +558,7 @@ class TeachingVideoAgent:
                     for round in range(self.feedback_rounds):
                         current_video = self.section_videos.get(section_id)
                         if not current_video:
-                            print(f"❌ {self.learning_topic} {section_id} no video available for MLLM feedback")
+                            print(f"❌ {self.learning_topic} {section_id} 没有可用视频进行 MLLM 反馈")
                             return success
                         try:
                             feedback = self.get_mllm_feedback(section, current_video, round_number=round + 1)
@@ -565,21 +568,21 @@ class TeachingVideoAgent:
                                 pass
                             else:
                                 print(
-                                    f"⚠️ {self.learning_topic} {section_id} round {round+1} MLLM feedback optimization failed, using current version"
+                                    f"⚠️ {self.learning_topic} {section_id} 第 {round+1} 轮 MLLM 反馈优化失败，使用当前版本"
                                 )
                         except Exception as e:
                             print(
-                                f"⚠️ {self.learning_topic} {section_id} round {round+1} MLLM feedback processing exception: {str(e)}"
+                                f"⚠️ {self.learning_topic} {section_id} 第 {round+1} 轮 MLLM 反馈处理异常: {str(e)}"
                             )
                             continue
 
                 except Exception as e:
-                    print(f"⚠️ {self.learning_topic} {section_id} MLLM feedback processing exception: {str(e)}")
+                    print(f"⚠️ {self.learning_topic} {section_id} MLLM 反馈处理异常: {str(e)}")
 
             return success
 
         except Exception as e:
-            print(f"❌ {self.learning_topic} {section_id} render process exception: {str(e)}")
+            print(f"❌ {self.learning_topic} {section_id} 渲染过程异常: {str(e)}")
             return False
 
     def render_section_worker(self, section_data) -> Tuple[str, bool, Optional[str]]:
@@ -593,11 +596,11 @@ class TeachingVideoAgent:
             return section_id, success, video_path
 
         except Exception as e:
-            print(f"❌ {self.learning_topic} {section_id} render process exception: {str(e)}")
+            print(f"❌ {self.learning_topic} {section_id} 渲染过程异常: {str(e)}")
             return section_id, False, None
 
     def render_all_sections(self, max_workers: int = 6) -> Dict[str, str]:
-        print(f"🎥 Start parallel rendering of all section videos (up to {max_workers} processes)...")
+        print(f"🎥 开始并行渲染所有分节视频 (最多 {max_workers} 个进程)...")
 
         tasks = []
         for section in self.sections:
@@ -605,11 +608,11 @@ class TeachingVideoAgent:
                 task_data = (section, self.__class__, self.get_serializable_state())
                 tasks.append(task_data)
             except Exception as e:
-                print(f"⚠️ Error preparing task data for {section.id}: {str(e)}")
+                print(f"⚠️ 为 {section.id} 准备任务数据时出错: {str(e)}")
                 continue
 
         if not tasks:
-            print("❌ No valid tasks to execute")
+            print("❌ 没有有效任务可执行")
             return {}
 
         results = {}
@@ -625,7 +628,7 @@ class TeachingVideoAgent:
                         future_to_section[future] = task[0].id
                     except Exception as e:
                         section_id = task[0].id if task and len(task) > 0 else "unknown"
-                        print(f"⚠️ Error submitting task for {section_id}: {str(e)}")
+                        print(f"⚠️ 提交 {section_id} 任务时出错: {str(e)}")
                         failed_count += 1
 
                 for future in as_completed(future_to_section):
@@ -636,41 +639,41 @@ class TeachingVideoAgent:
                         if success and video_path:
                             results[sid] = video_path
                             successful_count += 1
-                            print(f"✅ {sid} video rendered successfully: {video_path}")
+                            print(f"✅ {sid} 视频渲染成功: {video_path}")
                         else:
                             failed_count += 1
-                            print(f"⚠️ {sid} video rendering failed")
+                            print(f"⚠️ {sid} 视频渲染失败")
 
                     except Exception as e:
                         failed_count += 1
-                        print(f"❌ {section_id} video rendering process error: {str(e)}")
+                        print(f"❌ {section_id} 视频渲染过程错误: {str(e)}")
 
         except Exception as e:
-            print(f"❌ Critical error in parallel rendering process: {str(e)}")
+            print(f"❌ 并行渲染过程中出现严重错误: {str(e)}")
 
         # 更新结果并输出统计信息
         self.section_videos.update(results)
 
         total_sections = len(self.sections)
-        print(f"\n📊 Rendering Statistics:")
-        print(f"   Total Sections: {total_sections}")
-        print(f"   Success Rate: {successful_count/total_sections*100:.1f}%" if total_sections > 0 else "   Success Rate: 0%")
+        print(f"\n📊 渲染统计:")
+        print(f"   总小节数: {total_sections}")
+        print(f"   成功率: {successful_count/total_sections*100:.1f}%" if total_sections > 0 else "   成功率: 0%")
 
         if successful_count == 0:
-            print("❌ All section videos failed to render")
+            print("❌ 所有分节视频渲染失败")
         elif failed_count > 0:
             print(
-                f"⚠️ {failed_count} section videos failed to render, but {successful_count} section videos rendered successfully"
+                f"⚠️ {failed_count} 个分节视频渲染失败，但 {successful_count} 个分节视频渲染成功"
             )
         else:
-            print("🎉 All section videos rendered successfully!")
+            print("🎉 所有分节视频渲染成功！")
 
         return results
 
     def merge_videos(self, output_filename: str = None) -> str:
         """Step 5: Merge all section videos"""
         if not self.section_videos:
-            raise ValueError("No video files available to merge")
+            raise ValueError("没有可用视频进行合并")
 
         if output_filename is None:
             safe_name = topic_to_safe_name(self.learning_topic)
@@ -678,7 +681,7 @@ class TeachingVideoAgent:
 
         output_path = self.output_dir / output_filename
 
-        print(f"🔗 Start merging section videos...")
+        print(f"🔗 开始合并分节视频...")
 
         video_list_file = self.output_dir / "video_list.txt"
         with open(video_list_file, "w", encoding="utf-8") as f:
@@ -697,10 +700,10 @@ class TeachingVideoAgent:
             if result.returncode == 0:
                 return str(output_path)
             else:
-                print(f"❌ Failed to merge section videos: {result.stderr}")
+                print(f"❌ 合并分节视频失败: {result.stderr}")
                 return None
         except Exception as e:
-            print(f"❌ Failed to merge section videos: {e}")
+            print(f"❌ 合并分节视频失败: {e}")
             return None
 
     def GENERATE_VIDEO(self) -> str:
@@ -712,18 +715,18 @@ class TeachingVideoAgent:
             self.render_all_sections()
             final_video = self.merge_videos()
             if final_video:
-                print(f"🎉 Video generated success: {final_video}")
+                print(f"🎉 视频生成成功: {final_video}")
                 return final_video
             else:
-                print(f"❌{self.learning_topic}  failed")
+                print(f"❌ {self.learning_topic} 失败")
                 return None
         except Exception as e:
-            print(f"❌ Video generation failed: {e}")
+            print(f"❌ 视频生成失败: {e}")
             return None
 
 
 def process_knowledge_point(idx, kp, folder_path: Path, cfg: RunConfig):
-    print(f"\n🚀 Processing knowledge topic: {kp}")
+    print(f"\n🚀 正在处理知识点: {kp}")
     start_time = time.time()
 
     agent = TeachingVideoAgent(
@@ -737,7 +740,7 @@ def process_knowledge_point(idx, kp, folder_path: Path, cfg: RunConfig):
     duration_minutes = (time.time() - start_time) / 60
     total_tokens = agent.token_usage["total_tokens"]
 
-    print(f"✅ Knowledge topic '{kp}' processed. Cost Time: {duration_minutes:.2f} minutes, Tokens used: {total_tokens}")
+    print(f"✅ 知识点 '{kp}' 处理完成。耗时: {duration_minutes:.2f} 分钟, Token 使用: {total_tokens}")
     return kp, video_path, duration_minutes, total_tokens
 
 
@@ -745,17 +748,17 @@ def process_batch(batch_data, cfg: RunConfig):
     """Process a batch of knowledge points (serial within a batch)"""
     batch_idx, kp_batch, folder_path = batch_data
     results = []
-    print(f"Batch {batch_idx + 1} starts processing {len(kp_batch)} knowledge points")
+    print(f"第 {batch_idx + 1} 批次开始处理 {len(kp_batch)} 个知识点")
 
     for local_idx, (idx, kp) in enumerate(kp_batch):
         try:
             if local_idx > 0:
                 delay = random.uniform(3, 6)
-                print(f"⏳ Batch {batch_idx + 1} waits {delay:.1f}s before processing {kp}...")
+                print(f"⏳ 第 {batch_idx + 1} 批次在处理 {kp} 前等待 {delay:.1f} 秒...")
                 time.sleep(delay)
             results.append(process_knowledge_point(idx, kp, folder_path, cfg))
         except Exception as e:
-            print(f"❌ Batch {batch_idx + 1} processing {kp} failed: {e}")
+            print(f"❌ 第 {batch_idx + 1} 批次处理 {kp} 失败: {e}")
             results.append((kp, None, 0, 0))
     return batch_idx, results
 
@@ -772,7 +775,7 @@ def run_Code2Video(
             batches.append((i // batch_size, batch, folder_path))
 
         print(
-            f"🔄 Parallel batch processing mode: {len(batches)} batches, each with {batch_size} knowledge points, {max_workers} concurrent batches"
+            f"🔄 并行批处理模式: {len(batches)} 个批次，每批 {batch_size} 个知识点，{max_workers} 个并发批次"
         )
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(process_batch, batch, cfg): batch for batch in batches}
@@ -780,22 +783,22 @@ def run_Code2Video(
                 try:
                     batch_idx, batch_results = future.result()
                     all_results.extend(batch_results)
-                    print(f"✅ Batch {batch_idx + 1} completed")
+                    print(f"✅ 第 {batch_idx + 1} 批次完成")
                 except Exception as e:
-                    print(f"❌ Batch {batch_idx + 1} processing failed: {e}")
+                    print(f"❌ 第 {batch_idx + 1} 批次处理失败: {e}")
     else:
-        print("🔄 Serial processing mode")
+        print("🔄 串行处理模式")
         for idx, kp in enumerate(knowledge_points):
             try:
                 all_results.append(process_knowledge_point(idx, kp, folder_path, cfg))
             except Exception as e:
-                print(f"❌ Serial processing {kp} failed: {e}")
+                print(f"❌ 串行处理 {kp} 失败: {e}")
                 all_results.append((kp, None, 0, 0))
 
     successful_runs = [r for r in all_results if r[1] is not None]
     total_runs = len(all_results)
     if not successful_runs:
-        print("\nAll knowledge points failed, cannot calculate average.")
+        print("\n所有知识点处理失败，无法计算平均值。")
         return
 
     total_duration = sum(r[2] for r in successful_runs)
@@ -803,10 +806,10 @@ def run_Code2Video(
     num_successful = len(successful_runs)
 
     print("\n" + "=" * 50)
-    print(f"   Total knowledge points: {total_runs}")
-    print(f"   Successfully processed: {num_successful} ({num_successful/total_runs*100:.1f}%)")
-    print(f"   Average duration [min]: {total_duration/num_successful:.2f} minutes/knowledge point")
-    print(f"   Average token consumption: {total_tokens_consumed/num_successful:,.0f} tokens/knowledge point")
+    print(f"   总知识点数: {total_runs}")
+    print(f"   成功处理: {num_successful} ({num_successful/total_runs*100:.1f}%)")
+    print(f"   平均耗时 [分]: {total_duration/num_successful:.2f} 分钟/知识点")
+    print(f"   平均 Token 消耗: {total_tokens_consumed/num_successful:,.0f} tokens/知识点")
     print("=" * 50)
 
 
@@ -822,7 +825,7 @@ def get_api_and_output(API_name):
     try:
         return mapping[API_name]
     except KeyError:
-        raise ValueError("Invalid API model name")
+        raise ValueError("无效的 API 模型名称")
 
 
 def build_and_parse_args():
@@ -832,7 +835,7 @@ def build_and_parse_args():
         "--API",
         type=str,
         choices=["gpt-41", "claude", "gpt-5", "gpt-4o", "gpt-o4mini", "Gemini"],
-        default="gpt-41",
+        default="gpt-4o",
     )
     parser.add_argument(
         "--folder_prefix",
@@ -876,12 +879,12 @@ if __name__ == "__main__":
     iconfinder_cfg = _CFG.get("iconfinder", {})
     args.iconfinder_api_key = iconfinder_cfg.get("api_key")
     if args.iconfinder_api_key:
-        print(f"Iconfinder API Key: {args.iconfinder_api_key}")
+        print(f"Iconfinder API 密钥: {args.iconfinder_api_key}")
     else:
-        print("WARNING: Iconfinder API key not found in config file. Using default (None).")
+        print("警告: 配置文件中未找到 Iconfinder API 密钥。使用默认值 (None)。")
 
     if args.knowledge_point:
-        print(f"🔄 Single knowledge point mode: {args.knowledge_point}")
+        print(f"🔄 单知识点模式: {args.knowledge_point}")
         knowledge_points = [args.knowledge_point]
         args.parallel_group_num = 1
     elif args.knowledge_file:
@@ -890,7 +893,7 @@ if __name__ == "__main__":
             if args.max_concepts is not None:
                 knowledge_points = knowledge_points[: args.max_concepts]
     else:
-        raise ValueError("Must provide --knowledge_point | --knowledge_file")
+        raise ValueError("必须提供 --knowledge_point 或 --knowledge_file")
 
     cfg = RunConfig(
         api=api,

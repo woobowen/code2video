@@ -51,37 +51,37 @@ def fix_png_path(code_str: str, assets_dir: Path) -> str:
 
 
 def get_optimal_workers():
-    """Calculate the optimal number of parallel processes adaptively based on # CPU cores and load"""
+    """根据 CPU 核心数和负载自适应计算最佳并行进程数"""
     try:
         cpu_count = multiprocessing.cpu_count()
     except NotImplementedError:
         cpu_count = 6  # default
 
-    # Manim rendering is CPU-intensive; usually set workers to CPU cores or cores minus one
-    # reserve 1 core for system/other processes
+    # Manim 渲染是 CPU 密集型的；通常将 worker 设置为 CPU 核心数或核心数减一
+    # 预留 1 个核心给系统/其他进程
     optimal = max(1, cpu_count - 1)
 
-    # If the machine is high-performance multicore (>16 cores),
-    # it's appropriate to limit the number of workers to avoid memory overflow
+    # 如果是高性能多核机器 (>16 核)，
+    # 适当限制 worker 数量以避免内存溢出
     if optimal > 16:
         optimal = 16
 
-    print(f"⚙️ Detected {cpu_count} cores, using {optimal} parallel processes")
+    print(f"⚙️ 检测到 {cpu_count} 个核心，将使用 {optimal} 个并行进程")
     return optimal
 
 
 def monitor_system_resources():
-    """Monitor system resource usage"""
+    """监控系统资源使用情况"""
     try:
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
 
-        print(f"📊 Resource usage: CPU {cpu_percent:.1f}% | Memory {memory.percent:.1f}%")
+        print(f"📊 资源使用情况: CPU {cpu_percent:.1f}% | 内存 {memory.percent:.1f}%")
 
         if cpu_percent > 95:
-            print("⚠️ CPU usage is high")
+            print("⚠️ CPU 使用率过高")
         if memory.percent > 90:
-            print("⚠️ Memory usage is high")
+            print("⚠️ 内存使用率过高")
 
         return True
     except Exception:
@@ -93,30 +93,29 @@ def replace_base_class(code: str, new_class_def: str) -> str:
     class_start = None
     class_end = None
 
-    # Find the start line of class TeachingScene(Scene):
+    # 查找 class TeachingScene(Scene): 的起始行
     for i, line in enumerate(lines):
         if re.match(r"^\s*class\s+TeachingScene\s*\(Scene\)\s*:", line):
             class_start = i
             break
 
     if class_start is not None:
-        # Find the end line of the class definition
-        # The class ends when a line with the same or less indentation is found
+        # 查找类定义的结束行
+        # 类结束于缩进相同或更少的行出现时
         base_indent = len(lines[class_start]) - len(lines[class_start].lstrip())
         class_end = class_start + 1
         while class_end < len(lines):
             line = lines[class_end]
-            # If an empty line or a line with less indentation is found,
-            # it means the class definition has ended
+            # 如果发现空行以外且缩进小于等于基准缩进的行，说明类定义结束
             if line.strip() != "" and (len(line) - len(line.lstrip()) <= base_indent):
                 break
             class_end += 1
 
-        # Replace the original TeachingScene definition with the new one
+        # 用新的定义替换原始的 TeachingScene
         new_block = new_class_def.strip() + "\n\n"
         return "".join(lines[:class_start]) + new_block + "".join(lines[class_end:])
     else:
-        # If TeachingScene does not exist, it should be inserted before the first class definition
+        # 如果 TeachingScene 不存在，插入到第一个类定义之前
         for i, line in enumerate(lines):
             if re.match(r"^\s*class\s+\w+", line):
                 insert_pos = i
@@ -128,39 +127,39 @@ def replace_base_class(code: str, new_class_def: str) -> str:
         return "".join(lines[:insert_pos]) + new_block + "".join(lines[insert_pos:])
 
 
-# Save the program to the.py file
+# 将程序保存到 .py 文件
 def save_code_to_file(code: str, filename: str = "scene.py"):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(code)
-    print(f"Saved code to {filename}")
+    print(f"代码已保存至 {filename}")
 
 
-# Run the manim code to generate a video
+# 运行 manim 代码生成视频
 def run_manim_script(filename: str, scene_name: str, output_dir: str = "videos") -> str:
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{scene_name}.mp4")
 
     cmd = [
         "manim",
-        "-pql",  # play + low quality（can changed to -pqm or -pqh）
-        str(filename),  # script path
-        scene_name,  # class name
+        "-pqh",  # 修改为 -pqh (play + high quality 1080p)，原版为 -pql
+        str(filename),  # 脚本路径
+        scene_name,  # 类名
         "--output_file",
         f"{scene_name}.mp4",
         "--media_dir",
-        str(output_dir),  # media output directory
+        str(output_dir),  # 媒体输出目录
     ]
 
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
-        print("Manim error:", result.stderr.decode())
-        raise RuntimeError(f"Failed to render scene {scene_name}.")
+        print("Manim 错误:", result.stderr.decode())
+        raise RuntimeError(f"渲染场景 {scene_name} 失败。")
 
-    print(f"Video saved to {output_path}")
+    print(f"视频已保存至 {output_path}")
     return output_path
 
 
-# Use ffmpeg to concatenate multiple mp4 files
+# 使用 ffmpeg 拼接多个 mp4 文件
 def stitch_videos(video_files: List[str], output_path: str = "final_output.mp4"):
     list_file = "video_list.txt"
     with open(list_file, "w") as f:
@@ -168,23 +167,24 @@ def stitch_videos(video_files: List[str], output_path: str = "final_output.mp4")
             f.write(f"file '{os.path.abspath(vf)}'\n")
 
     cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", output_path]
-    print("Stitching videos:", cmd)
+    print("正在拼接视频:", cmd)
     subprocess.run(cmd, check=True)
-    print(f"Final stitched video saved to {output_path}")
+    print(f"最终拼接视频已保存至 {output_path}")
 
 
 def topic_to_safe_name(knowledge_point):
-    # Allowed: alphanumeric Spaces _ - { } [ ] . , + & ' =
-    SAFE_PATTERN = r"[^A-Za-z0-9 _\-\{\}\[\]\+&=\u03C0]"
+    # 允许：中文、字母、数字、空格、_ - { } [ ] . , + & ' =
+    # 核心修复：添加 \u4e00-\u9fa5 以支持中文字符
+    SAFE_PATTERN = r"[^A-Za-z0-9\u4e00-\u9fa5 _\-\{\}\[\]\+&=\u03C0]"
     safe_name = re.sub(SAFE_PATTERN, "", knowledge_point)
-    # Replace consecutive spaces with a single underscore
+    # 将连续空格替换为单个下划线
     safe_name = re.sub(r"\s+", "_", safe_name.strip())
     return safe_name
 
 
 def get_output_dir(idx, knowledge_point, base_dir, get_safe_name=False):
     safe_name = topic_to_safe_name(knowledge_point)
-    # Prefix with idx-
+    # 前缀 idx-
     folder_name = f"{idx}-{safe_name}"
     if get_safe_name:
         return Path(base_dir) / folder_name, safe_name
@@ -198,7 +198,7 @@ def eva_video_list(knowledge_points, base_dir):
     for idx, kp in enumerate(knowledge_points):
         folder, safe_name = get_output_dir(idx, kp, base_dir, get_safe_name=True)
 
-        # mp4 filename must be safe, the same
+        # mp4 文件名必须安全且一致
         mp4_name = f"{safe_name}.mp4"
         mp4_path = folder / mp4_name
         video_list.append({"path": str(mp4_path), "knowledge_point": kp})

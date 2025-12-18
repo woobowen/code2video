@@ -24,10 +24,10 @@
         "model": "o4-mini-2025-04-16"
     },
     "gpt4o": {
-        "base_url": "...",
-        "api_version": "...",
-        "api_key": "...",
-        "model": "gpt-4o-2024-11-20"
+        "base_url": "https://vip.dmxapi.com/v1",
+        "api_version": "2024-03-01-preview", 
+        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
+        "model": "gpt-4o"
     },
     "claude": {
         "base_url": "...",
