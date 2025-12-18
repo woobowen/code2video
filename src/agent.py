@@ -374,13 +374,11 @@ class TeachingVideoAgent:
                 result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=300)
 
                 if result.returncode == 0:
-                    # 注意：-qh 生成的是 1080p60，路径通常是 1080p60 而非 480p15
                     video_patterns = [
-                        self.output_dir / "media" / "videos" / f"{code_file.replace('.py', '')}" / "1080p60" / f"{scene_name}.mp4",
-                        self.output_dir / "media" / "videos" / "1080p60" / f"{scene_name}.mp4",
-                        # 保留旧路径以防万一
                         self.output_dir / "media" / "videos" / f"{code_file.replace('.py', '')}" / "480p15" / f"{scene_name}.mp4",
                         self.output_dir / "media" / "videos" / "480p15" / f"{scene_name}.mp4",
+                        self.output_dir / "media" / "videos" / f"{code_file.replace('.py', '')}" / "1080p60" / f"{scene_name}.mp4",
+                        self.output_dir / "media" / "videos" / "1080p60" / f"{scene_name}.mp4",
                     ]
 
                     for video_path in video_patterns:
@@ -637,7 +635,7 @@ class TeachingVideoAgent:
                 for future in as_completed(future_to_section):
                     section_id = future_to_section[future]
                     try:
-                        sid, success, video_path = future.result(timeout=300)
+                        sid, success, video_path = future.result(timeout=1200)
 
                         if success and video_path:
                             results[sid] = video_path
