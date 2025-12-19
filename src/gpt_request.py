@@ -120,29 +120,20 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
 
     return None, usage_info
 
-
 def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3):
     """
-    Makes a multimodal request to the Gemini-2.5 model using video + text.
-
-    Args:
-        prompt (str): The user instruction, e.g., "Please evaluate and suggest improvements for this educational animation."
-        video_path (str): Local path to the video file (MP4 preferred, <20MB recommended).
-        log_id (str, optional): Tracking ID
-        max_tokens (int): Max response token length
-        max_retries (int): Max retry attempts
-
-    Returns:
-        dict: The Gemini model response
+    Makes a multimodal request to the Gemini model using video + text via OpenAI-compatible proxy.
     """
     base_url = cfg("gemini", "base_url")
-    api_version = cfg("gemini", "api_version")
+    # api_version = cfg("gemini", "api_version") # Standard OpenAI proxy usually doesn't need api_version in init
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
+    # 修改点：使用 base_url 初始化标准 OpenAI 客户端
     client = OpenAI(
-        azure_endpoint=base_url,
+        base_url=base_url,
         api_key=api_key,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -192,26 +183,18 @@ def request_gemini_video_img(
     prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3
 ):
     """
-    Makes a multimodal request to the Gemini-2.5 model using video & ref img + text.
-
-    Args:
-        prompt (str): The user instruction, e.g., "Please evaluate and suggest improvements for this educational animation."
-        video_path (str): Local path to the video file (MP4 preferred, <20MB recommended).
-        log_id (str, optional): Tracking ID
-        max_tokens (int): Max response token length
-        max_retries (int): Max retry attempts
-
-    Returns:
-        dict: The Gemini model response
+    Makes a multimodal request to the Gemini model using video & ref img + text via OpenAI-compatible proxy.
     """
     base_url = cfg("gemini", "base_url")
-    api_version = cfg("gemini", "api_version")
+    # api_version = cfg("gemini", "api_version")
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
+    # 修改点：使用 base_url 初始化标准 OpenAI 客户端
     client = OpenAI(
-        azure_endpoint=base_url,
+        base_url=base_url,
         api_key=api_key,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -275,26 +258,18 @@ def request_gemini_video_img_token(
     prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3
 ):
     """
-    Makes a multimodal request to the Gemini-2.5 model using video & ref img + text.
-
-    Args:
-        prompt (str): The user instruction, e.g., "Please evaluate and suggest improvements for this educational animation."
-        video_path (str): Local path to the video file (MP4 preferred, <20MB recommended).
-        log_id (str, optional): Tracking ID
-        max_tokens (int): Max response token length
-        max_retries (int): Max retry attempts
-
-    Returns:
-        dict: The Gemini model response
+    Makes a multimodal request to the Gemini model using video & ref img + text (Returns Token Usage).
     """
     base_url = cfg("gemini", "base_url")
-    api_version = cfg("gemini", "api_version")
+    # api_version = cfg("gemini", "api_version")
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
+    # 修改点：使用 base_url 初始化标准 OpenAI 客户端
     client = OpenAI(
-        azure_endpoint=base_url,
+        base_url=base_url,
         api_key=api_key,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -364,25 +339,18 @@ def request_gemini_video_img_token(
 
 def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
     """
-    Makes a request to the gemini-2.5-pro-preview-03-25 model with retry functionality.
-
-    Args:
-        prompt (str): The text prompt to send to the model
-        log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
-        max_tokens (int, optional): Maximum tokens for response, default 8000
-        max_retries (int, optional): Maximum number of retry attempts, default 3
-
-    Returns:
-        dict: The model's response
+    Makes a request to the Gemini model via OpenAI-compatible proxy.
     """
     base_url = cfg("gemini", "base_url")
-    api_version = cfg("gemini", "api_version")
+    # api_version = cfg("gemini", "api_version")
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
+    # 修改点：使用 base_url 初始化标准 OpenAI 客户端
     client = OpenAI(
-        azure_endpoint=base_url,
+        base_url=base_url,
         api_key=api_key,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -415,26 +383,19 @@ def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
 
 def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
     """
-    Makes a request to the gemini-2.5-pro-preview-03-25 model with retry functionality.
-
-    Args:
-        prompt (str): The text prompt to send to the model
-        log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
-        max_tokens (int, optional): Maximum tokens for response, default 8000
-        max_retries (int, optional): Maximum number of retry attempts, default 3
-
-    Returns:
-        dict: The model's response
+    Makes a request to the Gemini model via OpenAI-compatible proxy (Returns Token Usage).
     """
 
     base_url = cfg("gemini", "base_url")
-    api_version = cfg("gemini", "api_version")
+    # api_version = cfg("gemini", "api_version")
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
+    # 修改点：使用 base_url 初始化标准 OpenAI 客户端
     client = OpenAI(
-        azure_endpoint=base_url,
+        base_url=base_url,
         api_key=api_key,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -472,7 +433,6 @@ def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
             )
             time.sleep(delay)
     return None, usage_info
-
 
 def request_gpt4o(prompt, log_id=None, max_tokens=8000, max_retries=3):
     """
@@ -1104,26 +1064,84 @@ if __name__ == "__main__":
     # # Claude
     # response_claude = request_claude_token("新加坡天气怎么样？")
     # print(response_claude)
-    print("🚀 正在测试 GPT-5 连接...")
     
     # 测试 prompt
-    prompt = "你是谁？请用中文简短回答，并告诉我你现在的版本型号。"
+    print("\n🚀 开始 Gemini 全功能测试 (Base URL: https://vip.dmxapi.com/v1)...")
+    print("=" * 60)
+
+    # ==========================================
+    # 1. 基础文本对话测试 (验证 request_gemini_token)
+    # ==========================================
+    print("1️⃣ [文本测试] 正在请求 request_gemini_token ...")
+    prompt_text = "你好，请用中文简短介绍一下你自己，并告诉我你现在的版本型号。"
     
-    start_time = time.time()
+    try:
+        start_time = time.time()
+        # 注意：这里调用的是修改后适配了 OpenAI 格式的函数
+        response, usage = request_gemini_token(prompt_text)
+        duration = time.time() - start_time
+        
+        if response:
+            print(f"✅ 请求成功 (耗时 {duration:.2f}s)")
+            # 解析内容 (适配 choices 结构)
+            content = response.choices[0].message.content
+            print(f"💬 模型回复: {content}")
+            print(f"📊 Token数据: {usage}")
+        else:
+            print("❌ 请求失败: 返回为空")
+            
+    except Exception as e:
+        print(f"❌ 文本测试发生异常: {e}")
     
-    # 调用我们在上面修改过的 request_gpt5_token 函数
-    # 注意：这里会使用你 api_config.json 里配置的 key 和 url
-    response, usage = request_gpt5_token(prompt)
+    print("-" * 60)
+
+    # ==========================================
+    # 2. 多模态测试 (验证 request_gemini_video_img_token)
+    # ==========================================
+    print("2️⃣ [多模态测试] 正在准备 request_gemini_video_img_token ...")
     
-    end_time = time.time()
+    # 自动定位项目中的测试资源
+    current_dir = pathlib.Path(__file__).parent.resolve()
     
-    if response:
-        print("\n✅ 测试成功！")
-        print(f"⏱️ 耗时: {end_time - start_time:.2f} 秒")
-        print("-" * 30)
-        # 打印模型返回的原始内容
-        print(response.choices[0].message.content)
-        print("-" * 30)
-        print(f"📊 Token 使用: {usage}")
+    # 1. 寻找一张存在的图片 (优先使用 GRID.png，没有则用 cat.png)
+    image_path = current_dir / "assets" / "reference" / "GRID.png"
+    if not image_path.exists():
+        image_path = current_dir / "assets" / "icon" / "cat.png"
+
+    # 2. 设置视频路径 
+    # ⚠️ 注意: 代码默认按 'video/mp4' 处理。请修改下方路径指向您本地一个真实的 MP4 文件。
+    # 这里默认指向可能生成的输出目录，如果没有文件，脚本会自动跳过此测试。
+    # 修改为指向 src/CASES/test_video.mp4
+    video_path = current_dir / "CASES" / "test_video.mp4" 
+
+    print(f"📂 图片路径: {image_path}")
+    print(f"📂 视频路径: {video_path}")
+
+    if image_path.exists() and video_path.exists():
+        print("▶️ 文件存在，开始发送多模态请求...")
+        prompt_mm = "请详细描述这张图片的内容，并分析视频中发生的事情。"
+        
+        try:
+            start_time = time.time()
+            # 调用多模态接口
+            response_mm, usage_mm = request_gemini_video_img_token(prompt_mm, str(video_path), str(image_path))
+            duration = time.time() - start_time
+            
+            if response_mm:
+                print(f"✅ 多模态请求成功 (耗时 {duration:.2f}s)")
+                content_mm = response_mm.choices[0].message.content
+                print(f"💬 模型回复: {content_mm}")
+                print(f"📊 Token数据: {usage_mm}")
+            else:
+                print("❌ 多模态请求失败: 返回为空")
+        except Exception as e:
+            print(f"❌ 多模态测试发生异常: {e}")
+            if "media_type" in str(e) or "400" in str(e):
+                print("💡 提示: 请确认视频文件是否为标准的 MP4 格式 (H.264编码)。")
     else:
-        print("\n❌ 测试失败，请检查上方的报错信息。")
+        print("⚠️ 跳过多模态测试: 未找到测试文件。")
+        if not video_path.exists():
+            print(f"   (提示: 请将一个测试用的 .mp4 文件放置在 {video_path} 或修改代码中的路径)")
+
+    print("=" * 60)
+    print("🚀 测试结束。")

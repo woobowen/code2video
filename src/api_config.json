@@ -1,9 +1,9 @@
 {
     "gemini": {
-        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "", 
-        "api_key": "AIzaSyC5fehemT1SF2kNhyefS1ejauvsDpuRR1Y", 
-        "model": "gemini-3.0-pro"
+        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf", 
+        "model": "gemini-3-pro-preview"
     },
     "gpt41": {
         "base_url": "https://vip.dmxapi.com/v1",
