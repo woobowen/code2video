@@ -142,7 +142,6 @@ def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tok
 
     client = openai.AzureOpenAI(
         azure_endpoint=base_url,
-        api_version=api_version,
         api_key=api_key,
     )
 
@@ -212,7 +211,6 @@ def request_gemini_video_img(
 
     client = openai.AzureOpenAI(
         azure_endpoint=base_url,
-        api_version=api_version,
         api_key=api_key,
     )
 
@@ -296,7 +294,6 @@ def request_gemini_video_img_token(
 
     client = openai.AzureOpenAI(
         azure_endpoint=base_url,
-        api_version=api_version,
         api_key=api_key,
     )
 
@@ -385,7 +382,6 @@ def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
 
     client = openai.AzureOpenAI(
         azure_endpoint=base_url,
-        api_version=api_version,
         api_key=api_key,
     )
 
@@ -438,7 +434,6 @@ def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
 
     client = openai.AzureOpenAI(
         azure_endpoint=base_url,
-        api_version=api_version,
         api_key=api_key,
     )
 
