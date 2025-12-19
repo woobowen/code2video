@@ -695,7 +695,7 @@ def request_o4mini_token(prompt, log_id=None, max_tokens=8000, max_retries=3, th
     return None, usage_info
 
 
-def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=3):
+def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=10):
     """
     Makes a request to the gpt-5 model via standard OpenAI client.
     (No token usage return, just the completion object)
@@ -739,7 +739,7 @@ def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=3):
             )
             time.sleep(delay)
 
-def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
+def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=10):
     """
     Makes a request to the gpt-5 model via standard OpenAI client.
     """
@@ -791,7 +791,7 @@ def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
             time.sleep(delay)
     return None, usage_info
 
-def request_gpt5_img(prompt, image_path=None, log_id=None, max_tokens=1000, max_retries=3):
+def request_gpt5_img(prompt, image_path=None, log_id=None, max_tokens=1000, max_retries=10):
     """
     Makes a request to the gpt-5 model with optional image input.
     Uses standard OpenAI client.
