@@ -140,7 +140,7 @@ def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tok
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
-    client = openai.AzureOpenAI(
+    client = OpenAI(
         azure_endpoint=base_url,
         api_key=api_key,
     )
@@ -209,7 +209,7 @@ def request_gemini_video_img(
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
-    client = openai.AzureOpenAI(
+    client = OpenAI(
         azure_endpoint=base_url,
         api_key=api_key,
     )
@@ -292,7 +292,7 @@ def request_gemini_video_img_token(
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
-    client = openai.AzureOpenAI(
+    client = OpenAI(
         azure_endpoint=base_url,
         api_key=api_key,
     )
@@ -380,7 +380,7 @@ def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
-    client = openai.AzureOpenAI(
+    client = OpenAI(
         azure_endpoint=base_url,
         api_key=api_key,
     )
@@ -432,7 +432,7 @@ def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
     api_key = cfg("gemini", "api_key")
     model_name = cfg("gemini", "model")
 
-    client = openai.AzureOpenAI(
+    client = OpenAI(
         azure_endpoint=base_url,
         api_key=api_key,
     )
@@ -737,27 +737,19 @@ def request_o4mini_token(prompt, log_id=None, max_tokens=8000, max_retries=3, th
 
 def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=3):
     """
-    Makes a request to the gpt-5-chat-2025-08-07 model with retry functionality.
-
-    Args:
-        prompt (str): The text prompt to send to the model
-        log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
-        max_tokens (int, optional): Maximum tokens for response, default 1000
-        max_retries (int, optional): Maximum number of retry attempts, default 3
-
-    Returns:
-        dict: The model's response
+    Makes a request to the gpt-5 model via standard OpenAI client.
+    (No token usage return, just the completion object)
     """
-
+    # 1. 读取配置
     base_url = cfg("gpt5", "base_url")
-    api_version = cfg("gpt5", "api_version")
     ak = cfg("gpt5", "api_key")
     model_name = cfg("gpt5", "model")
 
-    client = openai.AzureOpenAI(
-        azure_endpoint=base_url,
-        api_version=api_version,
+    # 2. ✅ 修正点：改为标准 OpenAI 客户端
+    client = OpenAI(
+        base_url=base_url,
         api_key=ak,
+        timeout=300.0,
     )
 
     if log_id is None:
@@ -773,6 +765,7 @@ def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=3):
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 extra_headers=extra_headers,
+                timeout=300.0
             )
             return completion
         except Exception as e:
@@ -780,43 +773,32 @@ def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=3):
             if retry_count >= max_retries:
                 raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
 
-            # Exponential backoff with jitter
             delay = (2**retry_count) * 0.1 + (random.random() * 0.1)
             print(
                 f"Request failed with error: {str(e)}. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})"
             )
             time.sleep(delay)
 
-
 def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
     """
-    Makes a request to the gpt-5-chat-2025-08-07 model with retry functionality.
-
-    Args:
-        prompt (str): The text prompt to send to the model
-        log_id (str, optional): The log ID for tracking requests, defaults to tkb+timestamp
-        max_tokens (int, optional): Maximum tokens for response, default 1000
-        max_retries (int, optional): Maximum number of retry attempts, default 3
-
-    Returns:
-        dict: The model's response
+    Makes a request to the gpt-5 model via standard OpenAI client.
     """
+    # 1. 读取配置
     base_url = cfg("gpt5", "base_url")
-    api_version = cfg("gpt5", "api_version")
     ak = cfg("gpt5", "api_key")
     model_name = cfg("gpt5", "model")
 
-    client = openai.AzureOpenAI(
-        azure_endpoint=base_url,
-        api_version=api_version,
+    # 2. ✅ 修正点：标准 OpenAI 客户端使用 base_url，而不是 azure_endpoint
+    client = OpenAI(
+        base_url=base_url,  # 👈 注意这里改成了 base_url
         api_key=ak,
+        timeout=300.0,      # 设置 5 分钟超时
     )
 
     if log_id is None:
         log_id = generate_log_id()
 
     extra_headers = {"X-TT-LOGID": log_id}
-
     usage_info = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     retry_count = 0
@@ -827,6 +809,7 @@ def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 extra_headers=extra_headers,
+                timeout=300.0
             )
 
             if completion.usage:
@@ -838,16 +821,91 @@ def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
         except Exception as e:
             retry_count += 1
             if retry_count >= max_retries:
-                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+                print(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+                return None, usage_info
 
-            # Exponential backoff with jitter
-            delay = (2**retry_count) * 0.1 + (random.random() * 0.1)
+            delay = (2**retry_count) * 1.0 + (random.random() * 0.5)
             print(
                 f"Request failed with error: {str(e)}. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})"
             )
             time.sleep(delay)
     return None, usage_info
 
+def request_gpt5_img(prompt, image_path=None, log_id=None, max_tokens=1000, max_retries=3):
+    """
+    Makes a request to the gpt-5 model with optional image input.
+    Uses standard OpenAI client.
+    """
+    # 1. 读取配置
+    base_url = cfg("gpt5", "base_url")
+    ak = cfg("gpt5", "api_key")
+    model_name = cfg("gpt5", "model")
+
+    # 2. 初始化标准客户端
+    client = OpenAI(
+        base_url=base_url,
+        api_key=ak,
+        timeout=300.0,
+    )
+    
+    if log_id is None:
+        log_id = generate_log_id()
+    
+    # 部分中转商可能不支持自定义 header，如果报错可注释掉
+    extra_headers = {"X-TT-LOGID": log_id}
+
+    # 3. 构建消息体
+    if image_path:
+        # 检查图片是否存在
+        if not os.path.isfile(image_path):
+            raise FileNotFoundError(f"Image file not found: {image_path}")
+
+        # 读取并转为 Base64
+        with open(image_path, "rb") as image_file:
+            base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url", 
+                        "image_url": {
+                            "url": f"data:image/png;base64,{base64_image}",
+                            "detail": "high" # 强制高清模式
+                        }
+                    },
+                ],
+            }
+        ]
+    else:
+        # 如果没有图片，就当普通对话处理
+        messages = [{"role": "user", "content": prompt}]
+
+    # 4. 发送请求
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=max_tokens,
+                extra_headers=extra_headers,
+                timeout=300.0
+            )
+            return completion
+            
+        except Exception as e:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+            
+            delay = (2**retry_count) * 1.0 + (random.random() * 0.5)
+            print(
+                f"Request failed with error: {str(e)}. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})"
+            )
+            time.sleep(delay)
 
 def request_gpt41(prompt, log_id=None, max_tokens=1000, max_retries=3):
     """
@@ -1036,8 +1094,8 @@ if __name__ == "__main__":
     # print(response_o4mini.model_dump_json())
 
     # # GPT-4.1
-    response_gpt41 = request_gpt41("上海天气怎么样？")
-    print(response_gpt41.model_dump_json())
+    #response_gpt41 = request_gpt41("上海天气怎么样？")
+    #print(response_gpt41.model_dump_json())
 
     # GPT-5
     # response_gpt5 = request_gpt5("新加坡天气怎么样？")
@@ -1046,3 +1104,26 @@ if __name__ == "__main__":
     # # Claude
     # response_claude = request_claude_token("新加坡天气怎么样？")
     # print(response_claude)
+    print("🚀 正在测试 GPT-5 连接...")
+    
+    # 测试 prompt
+    prompt = "你是谁？请用中文简短回答，并告诉我你现在的版本型号。"
+    
+    start_time = time.time()
+    
+    # 调用我们在上面修改过的 request_gpt5_token 函数
+    # 注意：这里会使用你 api_config.json 里配置的 key 和 url
+    response, usage = request_gpt5_token(prompt)
+    
+    end_time = time.time()
+    
+    if response:
+        print("\n✅ 测试成功！")
+        print(f"⏱️ 耗时: {end_time - start_time:.2f} 秒")
+        print("-" * 30)
+        # 打印模型返回的原始内容
+        print(response.choices[0].message.content)
+        print("-" * 30)
+        print(f"📊 Token 使用: {usage}")
+    else:
+        print("\n❌ 测试失败，请检查上方的报错信息。")

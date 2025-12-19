@@ -12,10 +12,10 @@
         "model": "gpt-4o" 
     },
     "gpt5": {
-        "base_url": "...",
-        "api_version": "...",
-        "api_key": "...",
-        "model": "gpt-5-chat-2025-08-07"
+        "base_url": "https://vip.dmxapi.com/v1",
+        "api_version": "",
+        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
+        "model": "gpt-5"
     },
     "gpto4mini": {
         "base_url": "...",
