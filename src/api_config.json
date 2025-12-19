@@ -3,7 +3,7 @@
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "", 
         "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf", 
-        "model": "gemini-3-pro-preview"
+        "model": "gemini-2.5-pro"
     },
     "gpt41": {
         "base_url": "https://vip.dmxapi.com/v1",

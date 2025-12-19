@@ -120,7 +120,7 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
 
     return None, usage_info
 
-def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3):
+def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10):
     """
     Makes a multimodal request to the Gemini model using video + text via OpenAI-compatible proxy.
     """
@@ -180,7 +180,7 @@ def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tok
 
 
 def request_gemini_video_img(
-    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3
+    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10
 ):
     """
     Makes a multimodal request to the Gemini model using video & ref img + text via OpenAI-compatible proxy.
@@ -255,7 +255,7 @@ def request_gemini_video_img(
 
 
 def request_gemini_video_img_token(
-    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 3
+    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10
 ):
     """
     Makes a multimodal request to the Gemini model using video & ref img + text (Returns Token Usage).
@@ -337,7 +337,7 @@ def request_gemini_video_img_token(
     return None, usage_info
 
 
-def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
+def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=10):
     """
     Makes a request to the Gemini model via OpenAI-compatible proxy.
     """
@@ -381,7 +381,7 @@ def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=3):
             time.sleep(delay)
 
 
-def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
+def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=10):
     """
     Makes a request to the Gemini model via OpenAI-compatible proxy (Returns Token Usage).
     """
@@ -867,6 +867,228 @@ def request_gpt5_img(prompt, image_path=None, log_id=None, max_tokens=1000, max_
             )
             time.sleep(delay)
 
+def request_gpt5_with_video(prompt: str, video_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10):
+    """
+    [GPT-5] Video + Text Request.
+    Mimics Gemini's video handling. 
+    Note: Standard OpenAI models usually expect frames, but this sends base64 video stream 
+    relying on the proxy/model's native multimodal capabilities.
+    """
+    base_url = cfg("gpt5", "base_url")
+    api_key = cfg("gpt5", "api_key")
+    model_name = cfg("gpt5", "model")
+
+    client = OpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        timeout=600.0, # 视频处理通常需要更长时间，建议设为 600s
+    )
+
+    if log_id is None:
+        log_id = generate_log_id()
+
+    extra_headers = {"X-TT-LOGID": log_id}
+
+    # Load and base64-encode video
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video not found: {video_path}")
+
+    with open(video_path, "rb") as f:
+        video_bytes = f.read()
+
+    video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+    data_url = f"data:video/mp4;base64,{video_base64}"
+
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            # 仿照 Gemini 的结构发送视频
+                            # 注意：如果标准 GPT-4o 报错，这里可能需要改为发送图片帧列表
+                            {
+                                "type": "image_url", 
+                                "image_url": {"url": data_url, "detail": "high"}, 
+                                # 这里的 media_type 是为了兼容部分中转站对 Gemini 格式的识别
+                                # 标准 OpenAI 库可能会忽略这个额外字段，但在 payload 中会保留
+                            },
+                        ],
+                    }
+                ],
+                max_tokens=max_tokens,
+                extra_headers=extra_headers,
+                timeout=600.0
+            )
+            return completion
+
+        except Exception as e:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+            
+            delay = (2**retry_count) * 0.5 + (random.random() * 0.5)
+            print(f"GPT-5 Video Retry {retry_count}/{max_retries}: {e}, waiting {delay:.2f}s...")
+            time.sleep(delay)
+
+
+def request_gpt5_video_img(
+    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10
+):
+    """
+    [GPT-5] Video + Reference Image + Text Request.
+    Mimics request_gemini_video_img.
+    """
+    base_url = cfg("gpt5", "base_url")
+    api_key = cfg("gpt5", "api_key")
+    model_name = cfg("gpt5", "model")
+
+    client = OpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        timeout=600.0,
+    )
+
+    if log_id is None:
+        log_id = generate_log_id()
+
+    extra_headers = {"X-TT-LOGID": log_id}
+
+    # 1. Process Video
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video not found: {video_path}")
+    with open(video_path, "rb") as f:
+        video_bytes = f.read()
+    video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+    video_data_url = f"data:video/mp4;base64,{video_base64}"
+
+    # 2. Process Image
+    if not os.path.isfile(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+    image_data_url = f"data:image/png;base64,{base64_image}"
+
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": video_data_url, "detail": "high"},
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": image_data_url, "detail": "high"},
+                            },
+                        ],
+                    }
+                ],
+                max_tokens=max_tokens,
+                extra_headers=extra_headers,
+                timeout=600.0
+            )
+            return completion
+
+        except Exception as e:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+            delay = (2**retry_count) * 0.5 + (random.random() * 0.5)
+            print(f"GPT-5 Video+Img Retry {retry_count}/{max_retries}: {e}, waiting {delay:.2f}s...")
+            time.sleep(delay)
+    return None
+
+
+def request_gpt5_video_img_token(
+    prompt: str, video_path: str, image_path: str, log_id=None, max_tokens: int = 10000, max_retries: int = 10
+):
+    """
+    [GPT-5] Video + Reference Image + Text Request (Returns Token Usage).
+    Mimics request_gemini_video_img_token.
+    """
+    base_url = cfg("gpt5", "base_url")
+    api_key = cfg("gpt5", "api_key")
+    model_name = cfg("gpt5", "model")
+
+    client = OpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        timeout=600.0,
+    )
+
+    if log_id is None:
+        log_id = generate_log_id()
+
+    extra_headers = {"X-TT-LOGID": log_id}
+    usage_info = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    # 1. Process Video
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video not found: {video_path}")
+    with open(video_path, "rb") as f:
+        video_bytes = f.read()
+    video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+    video_data_url = f"data:video/mp4;base64,{video_base64}"
+
+    # 2. Process Image
+    if not os.path.isfile(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+    image_data_url = f"data:image/png;base64,{base64_image}"
+
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": video_data_url, "detail": "high"},
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": image_data_url, "detail": "high"},
+                            },
+                        ],
+                    }
+                ],
+                max_tokens=max_tokens,
+                extra_headers=extra_headers,
+                timeout=600.0
+            )
+            
+            if completion.usage:
+                usage_info["prompt_tokens"] = completion.usage.prompt_tokens
+                usage_info["completion_tokens"] = completion.usage.completion_tokens
+                usage_info["total_tokens"] = completion.usage.total_tokens
+            return completion, usage_info
+
+        except Exception as e:
+            retry_count += 1
+            if retry_count >= max_retries:
+                raise Exception(f"Failed after {max_retries} attempts. Last error: {str(e)}")
+            delay = (2**retry_count) * 0.5 + (random.random() * 0.5)
+            print(f"GPT-5 Video+Img+Token Retry {retry_count}/{max_retries}: {e}, waiting {delay:.2f}s...")
+            time.sleep(delay)
+    return None, usage_info
+
 def request_gpt41(prompt, log_id=None, max_tokens=1000, max_retries=3):
     """
     Makes a request to the gpt-4.1-2025-04-14 model with retry functionality.
@@ -1066,82 +1288,91 @@ if __name__ == "__main__":
     # print(response_claude)
     
     # 测试 prompt
-    print("\n🚀 开始 Gemini 全功能测试 (Base URL: https://vip.dmxapi.com/v1)...")
+    print("\n🚀 开始【混合架构】全功能测试 (Hybrid Agent Debug)...")
+    print("🎯 目标架构: GPT-5 (大脑/代码) + Gemini (眼睛/视频)")
     print("=" * 60)
 
     # ==========================================
-    # 1. 基础文本对话测试 (验证 request_gemini_token)
+    # 1. 测试 GPT-5 (大脑/代码生成能力)
     # ==========================================
-    print("1️⃣ [文本测试] 正在请求 request_gemini_token ...")
-    prompt_text = "你好，请用中文简短介绍一下你自己，并告诉我你现在的版本型号。"
+    print("1️⃣ [大脑测试] 正在请求 GPT-5 (request_gpt5_token) ...")
+    prompt_text = "你好，请用中文简短介绍一下你自己，并写一个简单的Python Hello World 函数。"
     
     try:
         start_time = time.time()
-        # 注意：这里调用的是修改后适配了 OpenAI 格式的函数
-        response, usage = request_gemini_token(prompt_text)
+        # 调用 GPT-5 接口
+        response, usage = request_gpt5_token(prompt_text)
         duration = time.time() - start_time
         
         if response:
-            print(f"✅ 请求成功 (耗时 {duration:.2f}s)")
-            # 解析内容 (适配 choices 结构)
-            content = response.choices[0].message.content
-            print(f"💬 模型回复: {content}")
+            print(f"✅ GPT-5 请求成功 (耗时 {duration:.2f}s)")
+            # 解析内容
+            try:
+                content = response.choices[0].message.content
+                # 🔴 修改点：去掉了 [:100]，打印完整内容
+                print(f"💬 模型回复:\n{content.strip()}") 
+            except Exception:
+                print(f"⚠️ 无法解析回复内容，原始对象: {response}")
             print(f"📊 Token数据: {usage}")
         else:
-            print("❌ 请求失败: 返回为空")
+            print("❌ GPT-5 请求失败: 返回为空")
             
     except Exception as e:
-        print(f"❌ 文本测试发生异常: {e}")
+        print(f"❌ GPT-5 测试发生异常: {e}")
     
     print("-" * 60)
 
     # ==========================================
-    # 2. 多模态测试 (验证 request_gemini_video_img_token)
+    # 2. 测试 Gemini (眼睛/视频理解能力)
     # ==========================================
-    print("2️⃣ [多模态测试] 正在准备 request_gemini_video_img_token ...")
+    print("2️⃣ [眼睛测试] 正在请求 Gemini (request_gemini_video_img_token) ...")
     
     # 自动定位项目中的测试资源
     current_dir = pathlib.Path(__file__).parent.resolve()
     
-    # 1. 寻找一张存在的图片 (优先使用 GRID.png，没有则用 cat.png)
+    # 1. 寻找一张存在的图片
     image_path = current_dir / "assets" / "reference" / "GRID.png"
     if not image_path.exists():
         image_path = current_dir / "assets" / "icon" / "cat.png"
 
     # 2. 设置视频路径 
-    # ⚠️ 注意: 代码默认按 'video/mp4' 处理。请修改下方路径指向您本地一个真实的 MP4 文件。
-    # 这里默认指向可能生成的输出目录，如果没有文件，脚本会自动跳过此测试。
-    # 修改为指向 src/CASES/test_video.mp4
     video_path = current_dir / "CASES" / "test_video.mp4" 
 
     print(f"📂 图片路径: {image_path}")
     print(f"📂 视频路径: {video_path}")
 
     if image_path.exists() and video_path.exists():
-        print("▶️ 文件存在，开始发送多模态请求...")
+        print("▶️ 文件存在，开始发送多模态请求 (Gemini)...")
         prompt_mm = "请详细描述这张图片的内容，并分析视频中发生的事情。"
         
         try:
             start_time = time.time()
-            # 调用多模态接口
+            # 调用 Gemini 多模态接口
             response_mm, usage_mm = request_gemini_video_img_token(prompt_mm, str(video_path), str(image_path))
             duration = time.time() - start_time
             
             if response_mm:
-                print(f"✅ 多模态请求成功 (耗时 {duration:.2f}s)")
-                content_mm = response_mm.choices[0].message.content
-                print(f"💬 模型回复: {content_mm}")
+                print(f"✅ Gemini 多模态请求成功 (耗时 {duration:.2f}s)")
+                try:
+                    # 兼容不同格式的解析
+                    if hasattr(response_mm, 'choices'):
+                        content_mm = response_mm.choices[0].message.content
+                    elif hasattr(response_mm, 'candidates'):
+                        content_mm = response_mm.candidates[0].content.parts[0].text
+                    else:
+                        content_mm = str(response_mm)
+                    
+                    # 🔴 修改点：去掉了 [:100]，打印完整内容
+                    print(f"💬 模型回复:\n{content_mm.strip()}") 
+                except Exception:
+                    print(f"⚠️ 无法解析回复内容")
                 print(f"📊 Token数据: {usage_mm}")
             else:
-                print("❌ 多模态请求失败: 返回为空")
+                print("❌ Gemini 多模态请求失败: 返回为空")
         except Exception as e:
-            print(f"❌ 多模态测试发生异常: {e}")
-            if "media_type" in str(e) or "400" in str(e):
-                print("💡 提示: 请确认视频文件是否为标准的 MP4 格式 (H.264编码)。")
+            print(f"❌ Gemini 多模态测试发生异常: {e}")
     else:
-        print("⚠️ 跳过多模态测试: 未找到测试文件。")
-        if not video_path.exists():
-            print(f"   (提示: 请将一个测试用的 .mp4 文件放置在 {video_path} 或修改代码中的路径)")
+        print("⚠️ 跳过 Gemini 测试: 未找到测试文件 (test_video.mp4 或 图片)。")
 
     print("=" * 60)
-    print("🚀 测试结束。")
+    print("🚀 测试结束。如果以上两步都成功，您可以放心运行 agent.py 混合任务了。")
