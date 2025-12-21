@@ -2,19 +2,19 @@
     "gemini": {
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "", 
-        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf", 
+        "api_key": "sk-nxTM7Y4jqlxkDz2BQcoZEhlUd3S3CBOEzlVckl1GdWcM4Lol", 
         "model": "gemini-2.5-pro"
     },
     "gpt41": {
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "2024-03-01-preview", 
-        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
+        "api_key": "sk-nxTM7Y4jqlxkDz2BQcoZEhlUd3S3CBOEzlVckl1GdWcM4Lol",
         "model": "gpt-4o" 
     },
     "gpt5": {
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "",
-        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
+        "api_key": "sk-nxTM7Y4jqlxkDz2BQcoZEhlUd3S3CBOEzlVckl1GdWcM4Lol",
         "model": "gpt-5"
     },
     "gpto4mini": {
@@ -26,7 +26,7 @@
     "gpt4o": {
         "base_url": "https://vip.dmxapi.com/v1",
         "api_version": "2024-03-01-preview", 
-        "api_key": "sk-XWJ66vPu23fWpiGxkZ0KxbZEFtJTMizvPa5cNKzk12KOGtcf",
+        "api_key": "sk-nxTM7Y4jqlxkDz2BQcoZEhlUd3S3CBOEzlVckl1GdWcM4Lol",
         "model": "gpt-4o"
     },
     "claude": {
