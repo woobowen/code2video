@@ -321,6 +321,7 @@ class TeachingVideoAgent:
             try:
                 modifier = GridCodeModifier(current_code)
                 modified_code = modifier.parse_feedback_and_modify(feedback_improvements)
+                modified_code = fix_png_path(modified_code, self.assets_dir)
                 with open(code_file, "w", encoding="utf-8") as f:
                     f.write(modified_code)
 
@@ -710,9 +711,14 @@ class TeachingVideoAgent:
             ordered_ids = sorted(self.section_videos.keys(), key=natural_keys)
         
         with open(video_list_file, "w", encoding="utf-8") as f:
-            for section_id in sorted(self.section_videos.keys()):
-                video_path = self.section_videos[section_id].replace(f"{self.output_dir}/", "")
-                f.write(f"file '{video_path}'\n")
+            # 优先使用 ordered_ids (来自大纲 self.sections)
+            target_ids = ordered_ids if ordered_ids else sorted(self.section_videos.keys())
+    
+            for section_id in target_ids:
+            # 确保只处理不仅在大纲中、且实际生成了视频的 ID
+                if section_id in self.section_videos:
+                    video_path = self.section_videos[section_id].replace(f"{self.output_dir}/", "")
+                    f.write(f"file '{video_path}'\n")
 
         # ffmpeg
         try:
