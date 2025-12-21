@@ -9,6 +9,7 @@ import json
 import time
 import random
 import subprocess
+import shutil
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -482,8 +483,21 @@ class TeachingVideoAgent:
             print(f"✅ {self.learning_topic} {section.id} 无需优化")
             return True
 
-        # === Step 1: back up original code ===
+        # === Step 1: back up original code AND video ===
         original_code_content = self.section_codes[section.id]
+        
+        # [新增] 备份原始视频文件
+        original_video_path = self.section_videos.get(section.id)
+        video_backup_path = None
+        if original_video_path and os.path.exists(original_video_path):
+            try:
+                video_path_obj = Path(original_video_path)
+                # 创建备份文件名，例如: Section01_backup.mp4
+                video_backup_path = video_path_obj.with_name(f"{video_path_obj.stem}_backup{video_path_obj.suffix}")
+                shutil.copy2(original_video_path, video_backup_path)
+                print(f"📦 已备份原始视频: {video_backup_path}")
+            except Exception as e:
+                print(f"⚠️ 视频备份失败: {e}")
 
         for attempt in range(self.max_feedback_gen_code_tries):
             print(
@@ -499,19 +513,27 @@ class TeachingVideoAgent:
                 section=section, attempt=attempt + 1, feedback_improvements=feedback.suggested_improvements
             )
             success = self.debug_and_fix_code(section.id, max_fix_attempts=self.max_mllm_fix_bugs_tries)
+            
             if success:
                 optimized_output_dir = self.output_dir / "optimized_videos"
                 optimized_output_dir.mkdir(exist_ok=True)
                 optimized_video_path = optimized_output_dir / f"{section.id}_optimized.mp4"
 
                 if section.id in self.section_videos:
-                    original_video_path = Path(self.section_videos[section.id])
-                    if original_video_path.exists():
-                        original_video_path.rename(optimized_video_path)
+                    current_video_path = Path(self.section_videos[section.id])
+                    if current_video_path.exists():
+                        current_video_path.rename(optimized_video_path)
                         self.section_videos[section.id] = str(optimized_video_path)
                         print(f"✨ {self.learning_topic} {section.id} 优化后的视频已保存: {optimized_video_path}")
+                        
+                        # [新增] 优化成功，删除不再需要的备份文件
+                        if video_backup_path and video_backup_path.exists():
+                            try:
+                                video_backup_path.unlink()
+                            except:
+                                pass
                     else:
-                        print(f"⚠️ {self.learning_topic} {section.id} 未找到原始视频文件: {original_video_path}")
+                        print(f"⚠️ {self.learning_topic} {section.id} 未找到生成的视频文件: {current_video_path}")
                 else:
                     print(f"⚠️ {self.learning_topic} {section.id} 未找到优化后的视频路径")
                 return True
@@ -519,10 +541,26 @@ class TeachingVideoAgent:
                 print(
                     f"❌ {self.learning_topic} {section.id} MLLM 优化失败，尝试 {attempt + 1}/{self.max_feedback_gen_code_tries}"
                 )
+        
         print(f"❌ {self.learning_topic} {section.id} 所有优化尝试均失败，回滚到原始版本")
+        
+        # 回滚代码
         self.section_codes[section.id] = original_code_content
         with open(self.output_dir / f"{section.id}.py", "w", encoding="utf-8") as f:
             f.write(original_code_content)
+
+        # [新增] 回滚视频文件
+        if video_backup_path and video_backup_path.exists():
+            try:
+                target_path = Path(original_video_path)
+                # 将备份文件移动回原路径（覆盖可能存在的失败产物）
+                shutil.move(str(video_backup_path), str(target_path))
+                self.section_videos[section.id] = str(target_path)
+                print(f"♻️ 已从备份恢复原始视频: {target_path}")
+            except Exception as e:
+                print(f"⚠️ 视频恢复失败: {e}")
+        else:
+            print(f"⚠️ 无法恢复视频：未找到备份文件")
 
         return False
 
