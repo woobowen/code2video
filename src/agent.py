@@ -70,8 +70,11 @@ class TeachingVideoAgent:
         """1. Global parameter"""
         self.learning_topic = knowledge_point
         self.idx = idx
-        self.cfg = cfg
+        self.cfg = cfg or RunConfig()
         self.folder = folder  # 修复：保存 folder 路径，供 get_serializable_state 使用
+
+        if not self.cfg.api:
+            raise ValueError(f"❌ 错误: TeachingVideoAgent 初始化失败。必须在 RunConfig 中提供有效的 'api' 回调函数。")
 
         self.use_feedback = cfg.use_feedback
         self.use_assets = cfg.use_assets
@@ -696,6 +699,16 @@ class TeachingVideoAgent:
         print(f"🔗 开始合并分节视频...")
 
         video_list_file = self.output_dir / "video_list.txt"
+        ordered_ids = []
+        if self.sections:
+            ordered_ids = [s.id for s in self.sections]
+        else:
+            # 备选方案：如果缺失 sections 对象，使用自然排序 (Natural Sort)
+            # 这里简单实现一个 key function 处理 trailing numbers
+            def natural_keys(text):
+                return [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)]
+            ordered_ids = sorted(self.section_videos.keys(), key=natural_keys)
+        
         with open(video_list_file, "w", encoding="utf-8") as f:
             for section_id in sorted(self.section_videos.keys()):
                 video_path = self.section_videos[section_id].replace(f"{self.output_dir}/", "")
