@@ -9,10 +9,18 @@ from pathlib import Path
 
 
 def extract_json_from_markdown(text):
-    # Match ```json ... ``` or ``` ... ```
+    # 优先尝试匹配标准的 markdown 代码块 (```json ... ```)
     match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
     if match:
         return match.group(1)
+    
+    # 【新增回退机制】如果没找到代码块，尝试寻找字符串中第一个 '{' 和最后一个 '}'
+    # 这能处理 LLM 忘记写 markdown 标记的情况，或者在代码块前有废话的情况
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        return text[start : end + 1]
+        
     return text
 
 
@@ -32,19 +40,23 @@ def fix_png_path(code_str: str, assets_dir: Path) -> str:
     assets_dir = Path(assets_dir).resolve()
 
     def replacer(match):
-        original_path = match.group(1)  # matched XXX.png
+        original_path = match.group(1)  # 匹配到的路径，如 "icon/car.png"
         path_obj = Path(original_path)
-        # not an absolute path and is not under assets_dir
+        
+        # 如果不是绝对路径，且不包含 assets_dir
         if not path_obj.is_absolute():
-            # concat to absolute path
-            return f'"{assets_dir / path_obj.name}"'
-        # absolute path but not under assets_dir
+            # 【修复】使用 assets_dir / path_obj 而不是 path_obj.name
+            # 这样如果原路径是 "icons/car.png"，拼接后就是 ".../assets/icons/car.png"
+            # 而不是错误的 ".../assets/car.png" (丢失了 icons 目录)
+            return f'"{assets_dir / path_obj}"'
+            
+        # 如果是绝对路径但不在 assets_dir 下（处理逻辑保持不变或按需调整，这里主要修复相对路径逻辑）
         try:
             if assets_dir not in path_obj.parents:
-                return f'"{assets_dir / path_obj.name}"'
+                return f'"{assets_dir / path_obj.name}"' # 绝对路径回退到扁平化处理作为保底
         except RuntimeError:
             return f'"{assets_dir / path_obj.name}"'
-        return match.group(0)  # keep original
+        return match.group(0)  # 保持原样
 
     pattern = r'["\']([^"\']+\.png)["\']'
     return re.sub(pattern, replacer, code_str)
@@ -174,8 +186,8 @@ def stitch_videos(video_files: List[str], output_path: str = "final_output.mp4")
 
 def topic_to_safe_name(knowledge_point):
     # 允许：中文、字母、数字、空格、_ - { } [ ] . , + & ' =
-    # 核心修复：添加 \u4e00-\u9fa5 以支持中文字符
-    SAFE_PATTERN = r"[^A-Za-z0-9\u4e00-\u9fa5 _\-\{\}\[\]\+&=\u03C0]"
+    # 【修复】在正则中添加了 \. \, \' 以匹配注释描述
+    SAFE_PATTERN = r"[^A-Za-z0-9\u4e00-\u9fa5 _\-\{\}\[\]\+&=\u03C0\.\,\']"
     safe_name = re.sub(SAFE_PATTERN, "", knowledge_point)
     # 将连续空格替换为单个下划线
     safe_name = re.sub(r"\s+", "_", safe_name.strip())
