@@ -107,7 +107,8 @@ def replace_base_class(code: str, new_class_def: str) -> str:
 
     # 查找 class TeachingScene(Scene): 的起始行
     for i, line in enumerate(lines):
-        if re.match(r"^\s*class\s+TeachingScene\s*\(Scene\)\s*:", line):
+        # 放宽正则，只要是以 "class TeachingScene" 开头即可，忽略继承参数和冒号后的空格/注释
+        if re.match(r"^\s*class\s+TeachingScene", line):
             class_start = i
             break
 

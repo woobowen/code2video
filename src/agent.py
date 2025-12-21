@@ -351,6 +351,7 @@ class TeachingVideoAgent:
 
         # Replace base class
         code = replace_base_class(code, base_class)
+        code = fix_png_path(code, self.assets_dir)
 
         with open(code_file, "w", encoding="utf-8") as f:
             f.write(code)
@@ -361,7 +362,13 @@ class TeachingVideoAgent:
     def debug_and_fix_code(self, section_id: str, max_fix_attempts: int = 3) -> bool:
         """Enhanced debug and fix code method"""
         if section_id not in self.section_codes:
-            return False
+            code_file = self.output_dir / f"{section_id}.py"
+            if code_file.exists():
+                print(f"📂 [Worker] 从文件重新加载代码: {section_id}")
+                with open(code_file, "r", encoding="utf-8") as f:
+                    self.section_codes[section_id] = f.read()
+            else:
+                return False
 
         for fix_attempt in range(max_fix_attempts):
             print(f"🔧 {self.learning_topic} 正在调试 {section_id} (尝试 {fix_attempt + 1}/{max_fix_attempts})")
@@ -508,6 +515,10 @@ class TeachingVideoAgent:
                 print(
                     f"❌ {self.learning_topic} {section.id} MLLM 优化失败，尝试 {attempt + 1}/{self.max_feedback_gen_code_tries}"
                 )
+        print(f"❌ {self.learning_topic} {section.id} 所有优化尝试均失败，回滚到原始版本")
+        self.section_codes[section.id] = original_code_content
+        with open(self.output_dir / f"{section.id}.py", "w", encoding="utf-8") as f:
+            f.write(original_code_content)
 
         return False
 
