@@ -27,6 +27,7 @@ def generate_log_id():
 def request_claude(prompt, log_id=None, max_tokens=16384, max_retries=3):
     base_url = cfg("claude", "base_url")
     api_key = cfg("claude", "api_key")
+    model_name = cfg("claude", "model")
     client = OpenAI(base_url=base_url, api_key=api_key)
 
     if log_id is None:
@@ -38,7 +39,7 @@ def request_claude(prompt, log_id=None, max_tokens=16384, max_retries=3):
     while retry_count < max_retries:
         try:
             response = client.chat.completions.create(
-                model="claude-4-opus",
+                model = model_name,
                 messages=[
                     {
                         "role": "user",
@@ -73,7 +74,7 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
     base_url = cfg("claude", "base_url")
     api_key = cfg("claude", "api_key")
     client = OpenAI(base_url=base_url, api_key=api_key)
-
+    model_name = cfg("claude", "model")
     if log_id is None:
         log_id = generate_log_id()
 
@@ -84,7 +85,7 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
     while retry_count < max_retries:
         try:
             completion = client.chat.completions.create(
-                model="claude-4-opus",
+                model=model_name,
                 messages=[
                     {
                         "role": "user",
@@ -1283,96 +1284,96 @@ if __name__ == "__main__":
     # response_gpt5 = request_gpt5("新加坡天气怎么样？")
     # print(response_gpt5.model_dump_json())
 
-    # # Claude
-    # response_claude = request_claude_token("新加坡天气怎么样？")
-    # print(response_claude)
+    # Claude
+    response_claude = request_claude_token("新加坡天气怎么样？")
+    print(response_claude)
     
     # 测试 prompt
-    print("\n🚀 开始【混合架构】全功能测试 (Hybrid Agent Debug)...")
-    print("🎯 目标架构: GPT-5 (大脑/代码) + Gemini (眼睛/视频)")
-    print("=" * 60)
+    # print("\n🚀 开始【混合架构】全功能测试 (Hybrid Agent Debug)...")
+    # print("🎯 目标架构: GPT-5 (大脑/代码) + Gemini (眼睛/视频)")
+    # print("=" * 60)
 
-    # ==========================================
-    # 1. 测试 GPT-5 (大脑/代码生成能力)
-    # ==========================================
-    print("1️⃣ [大脑测试] 正在请求 GPT-5 (request_gpt5_token) ...")
-    prompt_text = "你好，请用中文简短介绍一下你自己，并写一个简单的Python Hello World 函数。"
+    # # ==========================================
+    # # 1. 测试 GPT-5 (大脑/代码生成能力)
+    # # ==========================================
+    # print("1️⃣ [大脑测试] 正在请求 GPT-5 (request_gpt5_token) ...")
+    # prompt_text = "你好，请用中文简短介绍一下你自己，并写一个简单的Python Hello World 函数。"
     
-    try:
-        start_time = time.time()
-        # 调用 GPT-5 接口
-        response, usage = request_gpt5_token(prompt_text)
-        duration = time.time() - start_time
+    # try:
+    #     start_time = time.time()
+    #     # 调用 GPT-5 接口
+    #     response, usage = request_gpt5_token(prompt_text)
+    #     duration = time.time() - start_time
         
-        if response:
-            print(f"✅ GPT-5 请求成功 (耗时 {duration:.2f}s)")
-            # 解析内容
-            try:
-                content = response.choices[0].message.content
-                # 🔴 修改点：去掉了 [:100]，打印完整内容
-                print(f"💬 模型回复:\n{content.strip()}") 
-            except Exception:
-                print(f"⚠️ 无法解析回复内容，原始对象: {response}")
-            print(f"📊 Token数据: {usage}")
-        else:
-            print("❌ GPT-5 请求失败: 返回为空")
+    #     if response:
+    #         print(f"✅ GPT-5 请求成功 (耗时 {duration:.2f}s)")
+    #         # 解析内容
+    #         try:
+    #             content = response.choices[0].message.content
+    #             # 🔴 修改点：去掉了 [:100]，打印完整内容
+    #             print(f"💬 模型回复:\n{content.strip()}") 
+    #         except Exception:
+    #             print(f"⚠️ 无法解析回复内容，原始对象: {response}")
+    #         print(f"📊 Token数据: {usage}")
+    #     else:
+    #         print("❌ GPT-5 请求失败: 返回为空")
             
-    except Exception as e:
-        print(f"❌ GPT-5 测试发生异常: {e}")
+    # except Exception as e:
+    #     print(f"❌ GPT-5 测试发生异常: {e}")
     
-    print("-" * 60)
+    # print("-" * 60)
 
-    # ==========================================
-    # 2. 测试 Gemini (眼睛/视频理解能力)
-    # ==========================================
-    print("2️⃣ [眼睛测试] 正在请求 Gemini (request_gemini_video_img_token) ...")
+    # # ==========================================
+    # # 2. 测试 Gemini (眼睛/视频理解能力)
+    # # ==========================================
+    # print("2️⃣ [眼睛测试] 正在请求 Gemini (request_gemini_video_img_token) ...")
     
-    # 自动定位项目中的测试资源
-    current_dir = pathlib.Path(__file__).parent.resolve()
+    # # 自动定位项目中的测试资源
+    # current_dir = pathlib.Path(__file__).parent.resolve()
     
-    # 1. 寻找一张存在的图片
-    image_path = current_dir / "assets" / "reference" / "GRID.png"
-    if not image_path.exists():
-        image_path = current_dir / "assets" / "icon" / "cat.png"
+    # # 1. 寻找一张存在的图片
+    # image_path = current_dir / "assets" / "reference" / "GRID.png"
+    # if not image_path.exists():
+    #     image_path = current_dir / "assets" / "icon" / "cat.png"
 
-    # 2. 设置视频路径 
-    video_path = current_dir / "CASES" / "test_video.mp4" 
+    # # 2. 设置视频路径 
+    # video_path = current_dir / "CASES" / "test_video.mp4" 
 
-    print(f"📂 图片路径: {image_path}")
-    print(f"📂 视频路径: {video_path}")
+    # print(f"📂 图片路径: {image_path}")
+    # print(f"📂 视频路径: {video_path}")
 
-    if image_path.exists() and video_path.exists():
-        print("▶️ 文件存在，开始发送多模态请求 (Gemini)...")
-        prompt_mm = "请详细描述这张图片的内容，并分析视频中发生的事情。"
+    # if image_path.exists() and video_path.exists():
+    #     print("▶️ 文件存在，开始发送多模态请求 (Gemini)...")
+    #     prompt_mm = "请详细描述这张图片的内容，并分析视频中发生的事情。"
         
-        try:
-            start_time = time.time()
-            # 调用 Gemini 多模态接口
-            response_mm, usage_mm = request_gemini_video_img_token(prompt_mm, str(video_path), str(image_path))
-            duration = time.time() - start_time
+    #     try:
+    #         start_time = time.time()
+    #         # 调用 Gemini 多模态接口
+    #         response_mm, usage_mm = request_gemini_video_img_token(prompt_mm, str(video_path), str(image_path))
+    #         duration = time.time() - start_time
             
-            if response_mm:
-                print(f"✅ Gemini 多模态请求成功 (耗时 {duration:.2f}s)")
-                try:
-                    # 兼容不同格式的解析
-                    if hasattr(response_mm, 'choices'):
-                        content_mm = response_mm.choices[0].message.content
-                    elif hasattr(response_mm, 'candidates'):
-                        content_mm = response_mm.candidates[0].content.parts[0].text
-                    else:
-                        content_mm = str(response_mm)
+    #         if response_mm:
+    #             print(f"✅ Gemini 多模态请求成功 (耗时 {duration:.2f}s)")
+    #             try:
+    #                 # 兼容不同格式的解析
+    #                 if hasattr(response_mm, 'choices'):
+    #                     content_mm = response_mm.choices[0].message.content
+    #                 elif hasattr(response_mm, 'candidates'):
+    #                     content_mm = response_mm.candidates[0].content.parts[0].text
+    #                 else:
+    #                     content_mm = str(response_mm)
                     
-                    # 🔴 修改点：去掉了 [:100]，打印完整内容
-                    print(f"💬 模型回复:\n{content_mm.strip()}") 
-                except Exception:
-                    print(f"⚠️ 无法解析回复内容")
-                print(f"📊 Token数据: {usage_mm}")
-            else:
-                print("❌ Gemini 多模态请求失败: 返回为空")
-        except Exception as e:
-            print(f"❌ Gemini 多模态测试发生异常: {e}")
-    else:
-        print("⚠️ 跳过 Gemini 测试: 未找到测试文件 (test_video.mp4 或 图片)。")
+    #                 # 🔴 修改点：去掉了 [:100]，打印完整内容
+    #                 print(f"💬 模型回复:\n{content_mm.strip()}") 
+    #             except Exception:
+    #                 print(f"⚠️ 无法解析回复内容")
+    #             print(f"📊 Token数据: {usage_mm}")
+    #         else:
+    #             print("❌ Gemini 多模态请求失败: 返回为空")
+    #     except Exception as e:
+    #         print(f"❌ Gemini 多模态测试发生异常: {e}")
+    # else:
+    #     print("⚠️ 跳过 Gemini 测试: 未找到测试文件 (test_video.mp4 或 图片)。")
 
-    print("=" * 60)
-    print("🚀 测试结束。如果以上两步都成功，您可以放心运行 agent.py 混合任务了。")
+    # print("=" * 60)
+    # print("🚀 测试结束。如果以上两步都成功，您可以放心运行 agent.py 混合任务了。")

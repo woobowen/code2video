@@ -375,11 +375,29 @@ class TeachingVideoAgent:
             else:
                 return False
 
+        # 动态解析 Scene 名称，避免类名与默认推断不一致
+        code_content_for_scene = self.section_codes.get(section_id, "")
+        scene_candidates = re.findall(r"class\s+(\w+)\s*\([^)]*\):", code_content_for_scene)
+        # 过滤掉没有 construct 方法的类
+        preferred_scene = None
+        if scene_candidates:
+            for cname in scene_candidates:
+                # 简单检查, 该类后出现 'def construct' 字样
+                pattern = rf"class\s+{cname}\s*\([^)]*\):[\s\S]*?def\s+construct\s*\("""
+                if re.search(pattern, code_content_for_scene):
+                    # 排除纯基类名称，如 TeachingScene/BaseScene 等
+                    if cname.lower() not in ("teachingscene", "basescene"):
+                        preferred_scene = cname
+                        break
+            if not preferred_scene:
+                preferred_scene = scene_candidates[-1]
+
         for fix_attempt in range(max_fix_attempts):
             print(f"🔧 {self.learning_topic} 正在调试 {section_id} (尝试 {fix_attempt + 1}/{max_fix_attempts})")
 
             try:
-                scene_name = f"{section_id.title().replace('_', '')}Scene"
+                # 首先尝试使用代码中真实存在的 Scene 名称，否则退回到默认推断
+                scene_name = preferred_scene if preferred_scene else f"{section_id.title().replace('_', '')}Scene"
                 code_file = f"{section_id}.py"
                 cmd = ["manim", "-ql", str(code_file), scene_name]
 

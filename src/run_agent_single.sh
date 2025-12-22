@@ -8,13 +8,13 @@ ENTRY=agent.py
 # -------------------------------------------------------------
 
 # Common defaults (if not overridden by command line)
-API="gpt-41"
+API="claude"
 FOLDER_PREFIX="TEST-single"
 
 # Hyperparameters
 MAX_CODE_TOKEN_LENGTH=10000
-MAX_FIX_BUG_TRIES=10
-MAX_REGENERATE_TRIES=10
+MAX_FIX_BUG_TRIES=3
+MAX_REGENERATE_TRIES=3
 MAX_FEEDBACK_GEN_CODE_TRIES=3
 MAX_MLLM_FIX_BUGS_TRIES=3
 FEEDBACK_ROUNDS=2
