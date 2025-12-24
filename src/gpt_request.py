@@ -7,6 +7,7 @@ from openai import OpenAI
 import time
 import json
 import pathlib
+from types import SimpleNamespace
 
 
 # Read and cache once
@@ -28,7 +29,7 @@ def request_claude(prompt, log_id=None, max_tokens=16384, max_retries=3):
     base_url = cfg("claude", "base_url")
     api_key = cfg("claude", "api_key")
     model_name = cfg("claude", "model")
-    client = OpenAI(base_url=base_url, api_key=api_key)
+    client = OpenAI(base_url=base_url, api_key=api_key, timeout=600.0)
 
     if log_id is None:
         log_id = generate_log_id()
@@ -73,7 +74,7 @@ def request_claude(prompt, log_id=None, max_tokens=16384, max_retries=3):
 def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
     base_url = cfg("claude", "base_url")
     api_key = cfg("claude", "api_key")
-    client = OpenAI(base_url=base_url, api_key=api_key)
+    client = OpenAI(base_url=base_url, api_key=api_key, timeout=600.0)
     model_name = cfg("claude", "model")
     if log_id is None:
         log_id = generate_log_id()
@@ -84,7 +85,8 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
     retry_count = 0
     while retry_count < max_retries:
         try:
-            completion = client.chat.completions.create(
+            # Use streaming to prevent timeouts on long generations (Keep-Alive)
+            stream = client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {
@@ -99,13 +101,50 @@ def request_claude_token(prompt, log_id=None, max_tokens=10000, max_retries=3):
                 ],
                 max_tokens=max_tokens,
                 extra_headers=extra_headers,
+                stream=True,
+                stream_options={"include_usage": True},
             )
-            # --- MODIFIED: token usage ---
-            if completion.usage:
-                usage_info["prompt_tokens"] = completion.usage.prompt_tokens
-                usage_info["completion_tokens"] = completion.usage.completion_tokens
-                usage_info["total_tokens"] = completion.usage.total_tokens
-            return completion, usage_info
+            
+            collected_content = []
+            
+            for chunk in stream:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        collected_content.append(delta.content)
+                
+                # Usage is typically in the last chunk
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    usage_info["prompt_tokens"] = chunk.usage.prompt_tokens
+                    usage_info["completion_tokens"] = chunk.usage.completion_tokens
+                    usage_info["total_tokens"] = chunk.usage.total_tokens
+
+            full_content = "".join(collected_content)
+
+            # Construct a MockResponse object compatible with agent.py expectations
+            # agent.py checks:
+            # 1. response.candidates[0].content.parts[0].text (Gemini style)
+            # 2. response.choices[0].message.content (OpenAI style)
+            
+            class MockResponse:
+                def __init__(self, content, usage):
+                    self.content_str = content
+                    self.usage = SimpleNamespace(**usage) if usage else None
+                    
+                    # OpenAI style
+                    self.choices = [
+                        SimpleNamespace(message=SimpleNamespace(content=content))
+                    ]
+                    
+                    # Gemini style (just in case)
+                    self.candidates = [
+                        SimpleNamespace(content=SimpleNamespace(parts=[SimpleNamespace(text=content)]))
+                    ]
+                
+                def __str__(self):
+                    return self.content_str
+
+            return MockResponse(full_content, usage_info), usage_info
 
         except Exception as e:
             retry_count += 1
@@ -134,7 +173,7 @@ def request_gemini_with_video(prompt: str, video_path: str, log_id=None, max_tok
     client = OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -195,7 +234,7 @@ def request_gemini_video_img(
     client = OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -270,7 +309,7 @@ def request_gemini_video_img_token(
     client = OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -351,7 +390,7 @@ def request_gemini(prompt, log_id=None, max_tokens=8000, max_retries=10):
     client = OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -396,7 +435,7 @@ def request_gemini_token(prompt, log_id=None, max_tokens=8000, max_retries=10):
     client = OpenAI(
         base_url=base_url,
         api_key=api_key,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -458,6 +497,7 @@ def request_gpt4o(prompt, log_id=None, max_tokens=8000, max_retries=3):
         azure_endpoint=base_url,
         api_version=api_version,
         api_key=ak,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -517,7 +557,7 @@ def request_gpt4o_token(prompt, log_id=None, max_tokens=8000, max_retries=3):
     client = OpenAI(
         base_url=base_url,
         api_key=ak,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -592,6 +632,7 @@ def request_o4mini(prompt, log_id=None, max_tokens=8000, max_retries=3, thinking
         azure_endpoint=base_url,
         api_version=api_version,
         api_key=ak,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -651,6 +692,7 @@ def request_o4mini_token(prompt, log_id=None, max_tokens=8000, max_retries=3, th
         azure_endpoint=base_url,
         api_version=api_version,
         api_key=ak,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -710,7 +752,7 @@ def request_gpt5(prompt, log_id=None, max_tokens=1000, max_retries=10):
     client = OpenAI(
         base_url=base_url,
         api_key=ak,
-        timeout=300.0,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -753,7 +795,7 @@ def request_gpt5_token(prompt, log_id=None, max_tokens=1000, max_retries=10):
     client = OpenAI(
         base_url=base_url,  # 👈 注意这里改成了 base_url
         api_key=ak,
-        timeout=300.0,      # 设置 5 分钟超时
+        timeout=600.0,      # 设置 10 分钟超时
     )
 
     if log_id is None:
@@ -806,7 +848,7 @@ def request_gpt5_img(prompt, image_path=None, log_id=None, max_tokens=1000, max_
     client = OpenAI(
         base_url=base_url,
         api_key=ak,
-        timeout=300.0,
+        timeout=600.0,
     )
     
     if log_id is None:
@@ -1112,6 +1154,7 @@ def request_gpt41(prompt, log_id=None, max_tokens=1000, max_retries=3):
         azure_endpoint=base_url,
         api_version=api_version,
         api_key=api_key,
+        timeout=600.0,
     )
 
     if log_id is None:
@@ -1152,7 +1195,7 @@ def request_gpt41_token(prompt, log_id=None, max_tokens=1000, max_retries=3):
     client = OpenAI(
         base_url=base_url,
         api_key=ak,
-        timeout=300.0,
+        timeout=600.0,
     )
     # ------------------------------------
 
@@ -1216,6 +1259,7 @@ def request_gpt41_img(prompt, image_path=None, log_id=None, max_tokens=1000, max
         azure_endpoint=base_url,
         api_version=api_version,
         api_key=ak,
+        timeout=600.0,
     )
     if log_id is None:
         log_id = generate_log_id()

@@ -140,7 +140,7 @@ class SmartSVGDownloader:
         try:
             url = f"https://api.iconfinder.com/v4/icons/search?query={element}&count=1&premium=0"
             headers = {"Authorization": f"Bearer {self.iconfinder_api_key}"}
-            resp = requests.get(url, headers=headers, timeout=10)
+            resp = requests.get(url, headers=headers, timeout=30)
             if resp.status_code != 200:
                 return None
             data = resp.json()
@@ -158,7 +158,7 @@ class SmartSVGDownloader:
             if not size_url and raster_sizes:
                 size_url = raster_sizes[-1]["formats"][0]["preview_url"]
             if size_url:
-                img_resp = requests.get(size_url, timeout=10)
+                img_resp = requests.get(size_url, timeout=30)
                 if img_resp.status_code == 200:
                     filepath = self.assets_dir / f"{element}.png"
                     filepath.write_bytes(img_resp.content)
@@ -169,12 +169,12 @@ class SmartSVGDownloader:
     def _download_iconify(self, element: str) -> Optional[str]:
         try:
             search_url = f"https://api.iconify.design/search?query={element}&limit=1"
-            r = requests.get(search_url, timeout=8)
+            r = requests.get(search_url, timeout=30)
             if r.status_code == 200 and r.json().get("icons"):
                 icon_id = r.json()["icons"][0]
                 collection, name = icon_id.split(":", 1)
                 svg_url = f"https://api.iconify.design/{collection}/{name}.svg"
-                svg_resp = requests.get(svg_url, timeout=8)
+                svg_resp = requests.get(svg_url, timeout=30)
                 if svg_resp.status_code == 200:
                     filepath = self.assets_dir / f"{element}.svg"
                     filepath.write_text(svg_resp.text, encoding="utf-8")

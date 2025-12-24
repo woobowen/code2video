@@ -399,7 +399,7 @@ class TeachingVideoAgent:
                 # 首先尝试使用代码中真实存在的 Scene 名称，否则退回到默认推断
                 scene_name = preferred_scene if preferred_scene else f"{section_id.title().replace('_', '')}Scene"
                 code_file = f"{section_id}.py"
-                cmd = ["manim", "-ql", str(code_file), scene_name]
+                cmd = [sys.executable, "-m", "manim", "-ql", str(code_file), scene_name]
 
                 result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.output_dir, timeout=300)
 
