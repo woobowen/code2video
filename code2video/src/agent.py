@@ -282,8 +282,10 @@ class TeachingVideoAgent:
                         self.enhanced_storyboard = storyboard_data
                     break
 
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e:
                     print(f"⚠️ 第 {attempt} 次尝试分镜格式无效，正在重试...")
+                    print(f"❌ JSON Error: {e}")
+                    print(f"❌ Content snippet: {content[:1000]}...") 
                     if attempt == self.max_regenerate_tries:
                         raise ValueError("分镜格式多次无效，请检查提示词或 API 响应")
 
@@ -561,7 +563,7 @@ class TeachingVideoAgent:
                 if section.id in self.section_videos:
                     current_video_path = Path(self.section_videos[section.id])
                     if current_video_path.exists():
-                        current_video_path.rename(optimized_video_path)
+                        current_video_path.replace(optimized_video_path)
                         self.section_videos[section.id] = str(optimized_video_path)
                         print(f"✨ {self.learning_topic} {section.id} 优化后的视频已保存: {optimized_video_path}")
                         
@@ -593,7 +595,7 @@ class TeachingVideoAgent:
             try:
                 target_path = Path(original_video_path)
                 # 将备份文件移动回原路径（覆盖可能存在的失败产物）
-                shutil.move(str(video_backup_path), str(target_path))
+                video_backup_path.replace(target_path)
                 self.section_videos[section.id] = str(target_path)
                 print(f"♻️ 已从备份恢复原始视频: {target_path}")
             except Exception as e:

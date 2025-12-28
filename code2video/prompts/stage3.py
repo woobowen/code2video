@@ -12,19 +12,30 @@ def get_prompt3_code(regenerate_note, section, base_class):
 
     ### 1. 动态布局系统 (Dynamic Layout System)
     ```python
-    # 推荐的标准初始化
-    code_obj = Code(code=..., language="python").to_edge(LEFT).scale(0.8)
+    # 布局坐标系统 (Layout Coordinates):
+    # If Code Exists (有代码时):
+    #   self.lecture (文字): 锚定在 屏幕左上角 (.to_corner(UP + LEFT)), 并留出边缘缓冲。
+    #   code_obj (代码): 锚定在 屏幕左下角 (.to_corner(DOWN + LEFT))，位于文字下方。
+    #   main_group (动画): 锚定在 屏幕右侧居中 (.to_edge(RIGHT)), 占据右半边屏幕。
     
-    # 右侧主容器，所有视觉元素放入这里，方便整体缩放/移动
-    main_group = VGroup().to_edge(RIGHT)
-    
-    # 如果是复杂算法，内部再分组
-    # e.g., graph_group = VGroup(...).next_to(main_group, UP)
-    #       aux_struct_group = VGroup(...).next_to(main_group, DOWN)
+    if hasattr(self, 'code_obj'):
+         self.lecture.to_corner(UP + LEFT)
+         self.code_obj.to_corner(DOWN + LEFT)
+         self.main_group.to_edge(RIGHT)
+    else:
+         # No Code: Standard Layout
+         self.lecture.to_edge(LEFT)
+         self.main_group.to_edge(RIGHT)
     ```
+    - **字体与可视性 (Visibility & Fonts)**:
+      - **动画文字增强**: 所有位于 `main_group` (右侧动画) 内部的 `Text`/`MathTex`，字号必须 **加大一级** (Scale up by 1.2x or 1.5x)，确保在右侧区域清晰可见。
+      - **代码高亮**: `code_obj` 必须启用语法高亮，背景尽量透明或深色适配，确保在左下角清晰。
 
     ### 2. 交互与逻辑表现 (Interaction & Logic)
     - **代码高亮**: `self.play(Indicate(code_obj.code[line_idx]))`
+    - **呼吸感时序 (Breathing Timing)**:
+      - **关键规则**: 在 `self.play(Indicate(self.lecture))` (文字高亮) 结束之后，**必须强制插入** `self.wait(0.5)`。
+      - **视线引导**: 先看左上文字 -> 停顿 0.5s -> 再看右侧动画或左下代码。严禁文字高亮与复杂动画同时开始。
     - **逻辑外显化**: 
       - 不要只让数据变色。如果代码里有 `if a > b`，你必须在屏幕上写出 `MathTex("5 > 3")`，显示它成立（变绿）或不成立（变红），然后再执行后续动作。
       - **递归**: 如果涉及递归，请在屏幕一角维护一个 `VGroup` 代表 Stack，每层递归 `add` 一个矩形，返回时 `remove`。

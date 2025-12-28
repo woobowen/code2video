@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: ========== 1) Default values and constants ==========
 set "API=claude"
-set "FOLDER_PREFIX=TEST-single"
+set "FOLDER_PREFIX=TEST-single-REGEN-BS"
 
 :: Hyperparameters
 set "MAX_CODE_TOKEN_LENGTH=10000"
