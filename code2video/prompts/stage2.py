@@ -9,13 +9,19 @@ def get_prompt2_storyboard(outline, reference_image_path):
     1.  **多维布局策略 (Layout Strategy)**:
         - **智能布局分流 (Smart Layout Branching)**:
           - **Case A: 纯理论/无代码 (No Code)** -> 保持现状：**左右对半布局**。左侧放讲解文字，右侧放可视化动画。
-          - **Case B: 代码演示场景 (With Code)** -> **采用 "左侧分割 + 右侧全屏" 布局 (Split-Left Layout)**:
+          - **Case B: 代码演示场景 (With Code - DEFAULT for Algorithms)** -> **采用 "左侧分割 + 右侧全屏" 布局 (Split-Left Layout)**:
+            - **规则**: 凡是讲解算法具体步骤（循环、判断、交换、递归）的章节，**必须**使用此模式展示代码片段。严禁只在最后才展示代码。
             - **左上区域 (Top-Left, ~30% height)**: 放置讲解文字 (Lecture Notes)。
-            - **左下区域 (Bottom-Left, ~70% height)**: 放置代码片段 (Code Snippet)。这样可以展示更多行代码，利用垂直空间。
+            - **左下区域 (Bottom-Left, ~70% height)**: 放置代码片段 (Code Snippet)。
             - **右侧区域 (Right Half, 100% height)**: 放置核心可视化/动画 (Main Visual)。
+          - **Case C: 完整代码/纯代码 (Full Code - FINAL SECTION ONLY)**:
+            - **规则**: 最后一个章节专门展示完整源码。
+            - **布局**: **隐藏左侧文字** (Lecture Notes opacity=0)，将代码对象放大并居中 (`scale(0.8).move_to(ORIGIN)`)。
+            - **分页**: 如果代码超过 20 行，必须拆分为连续的子场景 (Sub-scenes, e.g., `Scene 12.1`, `Scene 12.2`)。
+
         - **强制分页规则 (Pagination Protocol)**:
           - **文字量控制**: 单页讲解文字不得超过 **3行**。
-          - **代码量控制**: 如果代码过长导致左下区域放不下，**必须**将内容拆分为连续的子场景 (Sub-scenes, e.g., `Scene 2.1`, `Scene 2.2`)。宁可多页，不可字小。
+          - **代码量控制**: 如果代码过长导致左下区域放不下，**必须**将内容拆分为连续的子场景。宁可多页，不可字小。
         - **State Monitor (底部/角落)**: 实时显示的变量值（Cost, Index, True/False）。
         - **Text Zoning Strategy (文本分区策略)**:
           - **Lecture Lines (旁白字幕)**: 必须严格限制在屏幕底部的 "Subtitle Bar" (Bottom 15% area)。严禁将长段解释性文字放在屏幕中央或与图形混排。

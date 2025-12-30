@@ -42,9 +42,9 @@ def get_prompt1_outline(knowledge_point, duration=5, reference_image_path=None):
     3.  **变量追踪清单**:
         - 列出所有核心变量（Trace Variables）。对于复杂算法，可能包含：递归栈深度、当前 Cost、Hash表内容、PQ 队列状态等。
 
-    4.  **结尾完整代码 (Final Full Code)**:
-        - 视频的 **最后一个 Section** 必须包含一个 **"Full Code Example"**。
-        - 该部分可以分多页展示，用于回顾完整逻辑，代码应包含关键注释。
+    4.  **结尾结构要求 (Strict Ending Structure)**:
+        - **倒数第二节 (Summary)**: 仅包含文字总结、复杂度回顾、优缺点分析。**禁止出现代码**。
+        - **最后一节 (Full Source Code)**: 仅展示完整的、可运行的源代码。**禁止出现大段讲解文字**。此部分专门用于让观众暂停截图或阅读完整逻辑。
 
     # 输出格式 (JSON)
     请严格按照以下格式输出：

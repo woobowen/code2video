@@ -415,6 +415,21 @@ class TeachingVideoAgent:
             if not preferred_scene:
                 preferred_scene = scene_candidates[-1]
 
+        # [Optimized] Check if video already exists to skip rendering
+        scene_name_check = preferred_scene if preferred_scene else f"{section_id.title().replace('_', '')}Scene"
+        code_file_check = f"{section_id}.py"
+        video_patterns_check = [
+            self.output_dir / "media" / "videos" / f"{code_file_check.replace('.py', '')}" / "480p15" / f"{scene_name_check}.mp4",
+            self.output_dir / "media" / "videos" / "480p15" / f"{scene_name_check}.mp4",
+            self.output_dir / "media" / "videos" / f"{code_file_check.replace('.py', '')}" / "1080p60" / f"{scene_name_check}.mp4",
+            self.output_dir / "media" / "videos" / "1080p60" / f"{scene_name_check}.mp4",
+        ]
+        for video_path in video_patterns_check:
+            if video_path.exists():
+                self.section_videos[section_id] = str(video_path)
+                print(f"✅ {self.learning_topic} {section_id} 发现已有视频，跳过渲染: {video_path}")
+                return True
+
         for fix_attempt in range(max_fix_attempts):
             print(f"🔧 {self.learning_topic} 正在调试 {section_id} (尝试 {fix_attempt + 1}/{max_fix_attempts})")
 

@@ -14,17 +14,27 @@ def get_prompt3_code(regenerate_note, section, base_class):
     ```python
     # 布局坐标系统 (Layout Coordinates):
     # If Code Exists (有代码时):
-    #   self.lecture (文字): 锚定在 屏幕左上角 (.to_corner(UP + LEFT)), 并留出边缘缓冲。
-    #   code_obj (代码): 锚定在 屏幕左下角 (.to_corner(DOWN + LEFT))，位于文字下方。
+    #   self.lecture (文字): 强制吸顶 (.to_edge(UP, buff=0.2).to_edge(LEFT, buff=0.5))，为下方代码腾出空间。
+    #   code_obj (代码): 强制沉底 (.to_edge(DOWN, buff=0.2).to_edge(LEFT, buff=0.5))，位于文字下方。
     #   main_group (动画): 锚定在 屏幕右侧居中 (.to_edge(RIGHT)), 占据右半边屏幕。
     
     if hasattr(self, 'code_obj'):
-         self.lecture.to_corner(UP + LEFT)
-         self.code_obj.to_corner(DOWN + LEFT)
+         self.lecture.to_edge(UP, buff=0.2).to_edge(LEFT, buff=0.5)
+         self.code_obj.to_edge(DOWN, buff=0.2).to_edge(LEFT, buff=0.5)
          self.main_group.to_edge(RIGHT)
+
+         # Safety Scale Check (Overflow Protection)
+         max_width = 6.5
+         max_height = 7.5
+         
+         if self.main_group.width > max_width:
+             self.main_group.scale_to_fit_width(max_width)
+         
+         if self.main_group.height > max_height:
+             self.main_group.scale_to_fit_height(max_height)
     else:
-         # No Code: Standard Layout
-         self.lecture.to_edge(LEFT)
+         # No Code: Standard Layout -> Text Vertically Centered
+         self.lecture.to_edge(LEFT, buff=0.5).set_y(0)
          self.main_group.to_edge(RIGHT)
     ```
     - **字体与可视性 (Visibility & Fonts)**:
